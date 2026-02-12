@@ -258,19 +258,60 @@ The application will start on: **http://localhost:8080**
 
 Once the application is running, open your web browser and navigate to:
 
-- **Main Application**: http://localhost:8080
+- **Login Page**: http://localhost:8080/login.html
+- **Main Application**: http://localhost:8080 (redirects to login if not authenticated)
 - **H2 Database Console**: http://localhost:8080/h2-console
   - JDBC URL: `jdbc:h2:mem:librarydb`
   - Username: `sa`
   - Password: (leave empty)
 
-### Available Pages:
+### 🔐 Default Login Credentials
+
+The system comes with two pre-configured users:
+
+#### Librarian Account (Full Access)
+- **Username**: `librarian`
+- **Password**: `librarian123`
+- **Permissions**: 
+  - Manage books (create, update, delete)
+  - Manage members
+  - Manage all transactions
+  - View all statistics
+
+#### Member Account (Limited Access)
+- **Username**: `member`
+- **Password**: `member123`
+- **Permissions**:
+  - View books
+  - View own transactions
+  - Search books
+
+### User Roles & Permissions
+
+| Feature | Librarian | Member |
+|---------|-----------|--------|
+| View Books | ✅ | ✅ |
+| Add/Edit/Delete Books | ✅ | ❌ |
+| View Members | ✅ | ❌ |
+| Add/Edit/Delete Members | ✅ | ❌ |
+| View All Transactions | ✅ | ✅ |
+| Create Transactions (Borrow/Return) | ✅ | ❌ |
+| Manage Users | ✅ | ❌ |
+
+### Available Pages (after login):
 - **Dashboard**: http://localhost:8080/index.html
 - **Books Management**: http://localhost:8080/books.html
-- **Members Management**: http://localhost:8080/members.html
+- **Members Management**: http://localhost:8080/members.html (Librarian only)
 - **Transactions**: http://localhost:8080/transactions.html
 
 ## 📱 Using the Application
+
+### First Time Setup
+1. Start the application
+2. Navigate to http://localhost:8080
+3. You'll be redirected to the login page
+4. Use one of the default credentials above
+5. After login, you'll see the dashboard
 
 ### 1. Dashboard
 - View real-time statistics
@@ -312,20 +353,41 @@ Once the application is running, open your web browser and navigate to:
 
 ## 🔌 API Endpoints
 
-### Books API
+### Authentication API
 ```bash
-GET    /api/books                    # Get all books
-GET    /api/books/{id}               # Get book by ID
-GET    /api/books/search?keyword={}  # Search books
-POST   /api/books                    # Create book
-PUT    /api/books/{id}               # Update book
-DELETE /api/books/{id}               # Delete book
-POST   /api/books                    # Create book
-PUT    /api/books/{id}               # Update book
-DELETE /api/books/{id}               # Delete book
+POST   /api/auth/login              # Login (returns user info)
+GET    /api/auth/current-user       # Get current logged-in user
+POST   /api/auth/logout             # Logout
 ```
 
-### Members API
+**Login Example**:
+```bash
+curl -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -u librarian:librarian123 \
+  -d '{"username": "librarian", "password": "librarian123"}'
+```
+
+### Users API (Librarian Only)
+```bash
+GET    /api/users                   # Get all users
+GET    /api/users/{username}        # Get user by username
+POST   /api/users                   # Create new user
+PUT    /api/users/{id}              # Update user
+DELETE /api/users/{id}              # Delete user
+```
+
+### Books API
+```bash
+GET    /api/books                    # Get all books (Auth required)
+GET    /api/books/{id}               # Get book by ID (Auth required)
+GET    /api/books/search?keyword={}  # Search books (Auth required)
+POST   /api/books                    # Create book (Librarian only)
+PUT    /api/books/{id}               # Update book (Librarian only)
+DELETE /api/books/{id}               # Delete book (Librarian only)
+```
+
+### Members API (Librarian Only)
 ```bash
 GET    /api/members                  # Get all members
 GET    /api/members/{id}             # Get member by ID
@@ -337,18 +399,21 @@ DELETE /api/members/{id}             # Delete member
 
 ### Transactions API
 ```bash
-GET    /api/transactions             # Get all transactions
-GET    /api/transactions/active      # Get active loans
-GET    /api/transactions/overdue     # Get overdue transactions
-POST   /api/transactions/borrow      # Borrow a book
-POST   /api/transactions/return/{id} # Return a book
+GET    /api/transactions             # Get all transactions (Auth required)
+GET    /api/transactions/active      # Get active loans (Auth required)
+GET    /api/transactions/overdue     # Get overdue transactions (Auth required)
+POST   /api/transactions/borrow      # Borrow a book (Librarian only)
+POST   /api/transactions/return/{id} # Return a book (Librarian only)
 ```
 
-### Example API Calls (using curl)
+### Example API Calls (using curl with authentication)
 
-#### Create a Book
+**Note**: All API calls (except login) require authentication using HTTP Basic Auth.
+
+#### Create a Book (Librarian only)
 ```bash
 curl -X POST http://localhost:8080/api/books \
+  -u librarian:librarian123 \
   -H "Content-Type: application/json" \
   -d '{
     "isbn": "978-0-123456-78-9",
@@ -363,9 +428,10 @@ curl -X POST http://localhost:8080/api/books \
   }'
 ```
 
-#### Register a Member
+#### Register a Member (Librarian only)
 ```bash
 curl -X POST http://localhost:8080/api/members \
+  -u librarian:librarian123 \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Jane Smith",
@@ -376,6 +442,12 @@ curl -X POST http://localhost:8080/api/members \
   }'
 ```
 
+#### Get All Books (Any authenticated user)
+```bash
+curl -X GET http://localhost:8080/api/books \
+  -u member:member123
+```
+
 ## 🏗️ Project Structure
 
 ```
@@ -383,22 +455,31 @@ library_management/
 ├── src/
 │   ├── main/
 │   │   ├── java/com/library/
-│   │   │   ├── controller/           # REST API Controllers
+│   │   │   ├── config/              # Configuration Classes
+│   │   │   │   ├── SecurityConfig.java    # Spring Security config
+│   │   │   │   └── DataInitializer.java   # Default users setup
+│   │   │   │
+│   │   │   ├── controller/          # REST API Controllers
+│   │   │   │   ├── AuthController.java      # Login/logout
+│   │   │   │   ├── UserController.java      # User management
 │   │   │   │   ├── BookController.java
 │   │   │   │   ├── MemberController.java
 │   │   │   │   └── TransactionController.java
 │   │   │   │
 │   │   │   ├── model/               # JPA Entities (Database Tables)
-│   │   │   │   ├── Book.java       # Books table
-│   │   │   │   ├── Member.java     # Members table
+│   │   │   │   ├── User.java        # Users table (Auth)
+│   │   │   │   ├── Book.java        # Books table
+│   │   │   │   ├── Member.java      # Members table
 │   │   │   │   └── Transaction.java # Transactions table
 │   │   │   │
 │   │   │   ├── repository/          # Data Access Layer
+│   │   │   │   ├── UserRepository.java
 │   │   │   │   ├── BookRepository.java
 │   │   │   │   ├── MemberRepository.java
 │   │   │   │   └── TransactionRepository.java
 │   │   │   │
 │   │   │   ├── service/             # Business Logic
+│   │   │   │   ├── UserService.java         # Auth & user management
 │   │   │   │   ├── BookService.java
 │   │   │   │   ├── MemberService.java
 │   │   │   │   └── TransactionService.java
@@ -410,6 +491,8 @@ library_management/
 │   │       ├── application-azure.properties        # Azure config
 │   │       └── static/                            # Frontend files
 │   │           ├── index.html                     # Dashboard
+│   │           ├── books.html                     # Books page
+│   │           ├── login.html                     # Login page
 │   │           ├── books.html                     # Books page
 │   │           ├── members.html                   # Members page
 │   │           ├── transactions.html              # Transactions page
@@ -425,6 +508,15 @@ library_management/
 ├── AZURE_SETUP.md                                # Azure deployment guide
 └── .gitignore                                    # Git ignore rules
 ```
+
+### Key Components Explained:
+
+1. **SecurityConfig**: Configures authentication, role-based access control
+2. **DataInitializer**: Creates default librarian and member users on startup
+3. **AuthController**: Handles login/logout operations
+4. **UserController**: Manages user accounts (librarian only)
+5. **User Model**: Stores user credentials and roles (LIBRARIAN/MEMBER)
+6. **UserService**: Implements Spring Security's UserDetailsService for authentication
 
 ## 🔧 Configuration
 
@@ -445,6 +537,8 @@ spring.h2.console.path=/h2-console
 # JPA Configuration
 spring.jpa.hibernate.ddl-auto=create-drop  # Recreates DB on restart
 ```
+
+**Note**: With `create-drop`, the database is cleared on each restart. Default users are recreated automatically.
 
 ### Production (Azure SQL Database)
 For Azure deployment, use `application-azure.properties`:
