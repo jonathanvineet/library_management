@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transactions - Library Management System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">📚 LibraryHub</div>
+            <ul class="navbar-nav">
+                <li><a href="index.html" class="nav-link">Dashboard</a></li>
+                <li><a href="books.html" class="nav-link">Books</a></li>
+                <li><a href="members.html" class="nav-link">Members</a></li>
+                <li><a href="transactions.html" class="nav-link active">Transactions</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="flex-between mb-2">
+            <h1>Transaction Management</h1>
+            <button class="btn btn-primary" onclick="openBorrowModal()">📖 Borrow Book</button>
+        </div>
+
+        <!-- Filter Buttons -->
+        <div class="flex gap-1 mb-2">
+            <button class="btn btn-outline" onclick="filterTransactions('all')">All Transactions</button>
+            <button class="btn btn-success" onclick="filterTransactions('active')">Active Loans</button>
+            <button class="btn btn-secondary" onclick="filterTransactions('overdue')">Overdue</button>
+            <button class="btn btn-outline" onclick="filterTransactions('returned')">Returned</button>
+        </div>
+
+        <!-- Transactions Table -->
+        <div class="glass-card">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Member</th>
+                            <th>Book</th>
+                            <th>Borrow Date</th>
+                            <th>Due Date</th>
+                            <th>Return Date</th>
+                            <th>Status</th>
+                            <th>Fine</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionsTableBody">
+                        <tr>
+                            <td colspan="8" class="text-center">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Borrow Book Modal -->
+    <div id="borrowModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Borrow Book</h2>
+                <button class="close-btn" onclick="closeModal('borrowModal')">&times;</button>
+            </div>
+            <form id="borrowForm" onsubmit="handleBorrowSubmit(event)">
+                <div class="form-group">
+                    <label for="memberSelect">Select Member *</label>
+                    <select id="memberSelect" required>
+                        <option value="">-- Select Member --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="bookSelect">Select Book *</label>
+                    <select id="bookSelect" required>
+                        <option value="">-- Select Book --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="loanDays">Loan Period (Days)</label>
+                    <input type="number" id="loanDays" min="1" max="90" value="14">
+                </div>
+
+                <div class="flex gap-1 mt-2">
+                    <button type="submit" class="btn btn-primary">Borrow Book</button>
+                    <button type="button" class="btn btn-outline" onclick="closeModal('borrowModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        let allTransactions = [];
+        let currentFilter = 'all';
+
+        async function loadTransactionsData() {
+            allTransactions = await loadTransactions();
+            displayTransactions(allTransactions);
+        }
+
+        function displayTransactions(transactions) {
+            const tbody = document.getElementById('transactionsTableBody');
+
+            if (transactions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center">No transactions found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = transactions.map(t => {
+                const isOverdue = t.status === 'BORROWED' && new Date(t.dueDate) < new Date();
+                const canReturn = t.status === 'BORROWED' || t.status === 'OVERDUE';
+
+                return `
+                    <tr>
+                        <td>${t.member.name}</td>
+                        <td><strong>${t.book.title}</strong></td>
+                        <td>${formatDate(t.borrowDate)}</td>
+                        <td>${formatDate(t.dueDate)}</td>
+                        <td>${t.returnDate ? formatDate(t.returnDate) : '-'}</td>
+                        <td>
+                            <span class="badge badge-${getTransactionBadge(t.status, isOverdue)}">
+                                ${isOverdue ? 'OVERDUE' : t.status}
+                            </span>
+                        </td>
+                        <td>${t.fineAmount > 0 ? '$' + t.fineAmount : '-'}</td>
+                        <td>
+                            ${canReturn ? `
+                                <button class="btn btn-success" style="padding: 0.25rem 0.75rem; font-size: 0.85rem;" 
+                                        onclick="returnBookById(${t.id})">
+                                    Return
+                                </button>
+                            ` : '-'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function getTransactionBadge(status, isOverdue) {
+            if (isOverdue) return 'danger';
+            const badges = {
+                'BORROWED': 'success',
+                'RETURNED': 'success',
+                'OVERDUE': 'danger',
+                'LOST': 'danger'
+            };
+            return badges[status] || 'success';
+        }
+
+        function filterTransactions(filter) {
+            currentFilter = filter;
+            let filtered = allTransactions;
+
+            switch (filter) {
+                case 'active':
+                    filtered = allTransactions.filter(t => t.status === 'BORROWED');
+                    break;
+                case 'overdue':
+                    filtered = allTransactions.filter(t =>
+                        (t.status === 'BORROWED' || t.status === 'OVERDUE') &&
+                        new Date(t.dueDate) < new Date()
+                    );
+                    break;
+                case 'returned':
+                    filtered = allTransactions.filter(t => t.status === 'RETURNED');
+                    break;
+            }
+
+            displayTransactions(filtered);
+        }
+
+        async function openBorrowModal() {
+            // Load members and books
+            const [members, books] = await Promise.all([
+                fetchAPI('/api/members/active'),
+                fetchAPI('/api/books/available')
+            ]);
+
+            // Populate member select
+            const memberSelect = document.getElementById('memberSelect');
+            memberSelect.innerHTML = '<option value="">-- Select Member --</option>' +
+                members.map(m => `<option value="${m.id}">${m.name} (${m.email})</option>`).join('');
+
+            // Populate book select
+            const bookSelect = document.getElementById('bookSelect');
+            bookSelect.innerHTML = '<option value="">-- Select Book --</option>' +
+                books.map(b => `<option value="${b.id}">${b.title} by ${b.author} (Available: ${b.availableCopies})</option>`).join('');
+
+            openModal('borrowModal');
+        }
+
+        async function handleBorrowSubmit(event) {
+            event.preventDefault();
+
+            const bookId = parseInt(document.getElementById('bookSelect').value);
+            const memberId = parseInt(document.getElementById('memberSelect').value);
+            const loanDays = parseInt(document.getElementById('loanDays').value);
+
+            try {
+                await borrowBook(bookId, memberId, loanDays);
+                closeModal('borrowModal');
+                loadTransactionsData();
+            } catch (error) {
+                console.error('Error borrowing book:', error);
+            }
+        }
+
+        async function returnBookById(transactionId) {
+            if (!confirm('Confirm book return?')) return;
+
+            try {
+                await returnBook(transactionId);
+                loadTransactionsData();
+            } catch (error) {
+                console.error('Error returning book:', error);
+            }
+        }
+
+        // Load transactions on page load
+        loadTransactionsData();
+    </script>
+</body>
+
+</html>

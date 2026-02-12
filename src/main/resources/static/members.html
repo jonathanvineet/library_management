@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Members - Library Management System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">📚 LibraryHub</div>
+            <ul class="navbar-nav">
+                <li><a href="index.html" class="nav-link">Dashboard</a></li>
+                <li><a href="books.html" class="nav-link">Books</a></li>
+                <li><a href="members.html" class="nav-link active">Members</a></li>
+                <li><a href="transactions.html" class="nav-link">Transactions</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="flex-between mb-2">
+            <h1>Member Management</h1>
+            <button class="btn btn-primary" onclick="openAddMemberModal()">➕ Register New Member</button>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-bar">
+            <input type="text" id="searchInput" class="search-input" placeholder="Search by name...">
+            <button class="btn btn-secondary" onclick="searchMembers()">🔍 Search</button>
+            <button class="btn btn-outline" onclick="clearSearch()">Clear</button>
+        </div>
+
+        <!-- Members Table -->
+        <div class="glass-card">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Membership Date</th>
+                            <th>Status</th>
+                            <th>Max Books</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="membersTableBody">
+                        <tr>
+                            <td colspan="7" class="text-center">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Member Modal -->
+    <div id="memberModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Register New Member</h2>
+                <button class="close-btn" onclick="closeModal('memberModal')">&times;</button>
+            </div>
+            <form id="memberForm" onsubmit="handleMemberSubmit(event)">
+                <input type="hidden" id="memberId">
+
+                <div class="form-group">
+                    <label for="name">Full Name *</label>
+                    <input type="text" id="name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email *</label>
+                    <input type="email" id="email" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Phone *</label>
+                    <input type="tel" id="phone" pattern="[0-9]{10}" placeholder="10 digits" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="address">Address</label>
+                    <textarea id="address" rows="2"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="status">Status</label>
+                    <select id="status">
+                        <option value="ACTIVE">Active</option>
+                        <option value="INACTIVE">Inactive</option>
+                        <option value="SUSPENDED">Suspended</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="maxBooksAllowed">Max Books Allowed</label>
+                    <input type="number" id="maxBooksAllowed" min="1" max="20" value="5">
+                </div>
+
+                <div class="flex gap-1 mt-2">
+                    <button type="submit" class="btn btn-primary">Save Member</button>
+                    <button type="button" class="btn btn-outline" onclick="closeModal('memberModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        let currentMembers = [];
+
+        async function loadMembersData() {
+            currentMembers = await loadMembers();
+            displayMembers(currentMembers);
+        }
+
+        function displayMembers(members) {
+            const tbody = document.getElementById('membersTableBody');
+
+            if (members.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">No members found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = members.map(member => `
+                <tr>
+                    <td><strong>${member.name}</strong></td>
+                    <td>${member.email}</td>
+                    <td>${member.phone}</td>
+                    <td>${formatDate(member.membershipDate)}</td>
+                    <td>
+                        <span class="badge badge-${getStatusBadge(member.status)}">
+                            ${member.status}
+                        </span>
+                    </td>
+                    <td>${member.maxBooksAllowed}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="icon-btn" onclick="editMember(${member.id})" title="Edit">✏️</button>
+                            <button class="icon-btn" onclick="deleteMemberById(${member.id})" title="Delete">🗑️</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getStatusBadge(status) {
+            const badges = {
+                'ACTIVE': 'success',
+                'INACTIVE': 'warning',
+                'SUSPENDED': 'danger'
+            };
+            return badges[status] || 'success';
+        }
+
+        async function searchMembers() {
+            const name = document.getElementById('searchInput').value;
+            currentMembers = await loadMembers(name);
+            displayMembers(currentMembers);
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            loadMembersData();
+        }
+
+        function openAddMemberModal() {
+            document.getElementById('modalTitle').textContent = 'Register New Member';
+            document.getElementById('memberForm').reset();
+            document.getElementById('memberId').value = '';
+            document.getElementById('status').value = 'ACTIVE';
+            document.getElementById('maxBooksAllowed').value = '5';
+            openModal('memberModal');
+        }
+
+        async function editMember(id) {
+            const member = currentMembers.find(m => m.id === id);
+            if (!member) return;
+
+            document.getElementById('modalTitle').textContent = 'Edit Member';
+            document.getElementById('memberId').value = member.id;
+            document.getElementById('name').value = member.name;
+            document.getElementById('email').value = member.email;
+            document.getElementById('phone').value = member.phone;
+            document.getElementById('address').value = member.address || '';
+            document.getElementById('status').value = member.status;
+            document.getElementById('maxBooksAllowed').value = member.maxBooksAllowed;
+
+            openModal('memberModal');
+        }
+
+        async function handleMemberSubmit(event) {
+            event.preventDefault();
+
+            const memberData = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                address: document.getElementById('address').value || null,
+                status: document.getElementById('status').value,
+                maxBooksAllowed: parseInt(document.getElementById('maxBooksAllowed').value)
+            };
+
+            const memberId = document.getElementById('memberId').value;
+
+            try {
+                if (memberId) {
+                    await updateMember(memberId, memberData);
+                } else {
+                    await createMember(memberData);
+                }
+                closeModal('memberModal');
+                loadMembersData();
+            } catch (error) {
+                console.error('Error saving member:', error);
+            }
+        }
+
+        async function deleteMemberById(id) {
+            const success = await deleteMember(id);
+            if (success) {
+                loadMembersData();
+            }
+        }
+
+        // Load members on page load
+        loadMembersData();
+
+        // Search on Enter key
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchMembers();
+        });
+    </script>
+</body>
+
+</html>

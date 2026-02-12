@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Books - Library Management System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">📚 LibraryHub</div>
+            <ul class="navbar-nav">
+                <li><a href="index.html" class="nav-link">Dashboard</a></li>
+                <li><a href="books.html" class="nav-link active">Books</a></li>
+                <li><a href="members.html" class="nav-link">Members</a></li>
+                <li><a href="transactions.html" class="nav-link">Transactions</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="flex-between mb-2">
+            <h1>Book Management</h1>
+            <button class="btn btn-primary" onclick="openAddBookModal()">➕ Add New Book</button>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-bar">
+            <input type="text" id="searchInput" class="search-input" placeholder="Search by title, author, or ISBN...">
+            <button class="btn btn-secondary" onclick="searchBooks()">🔍 Search</button>
+            <button class="btn btn-outline" onclick="clearSearch()">Clear</button>
+        </div>
+
+        <!-- Books Table -->
+        <div class="glass-card">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ISBN</th>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>Category</th>
+                            <th>Total Copies</th>
+                            <th>Available</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="booksTableBody">
+                        <tr>
+                            <td colspan="8" class="text-center">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Book Modal -->
+    <div id="bookModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Add New Book</h2>
+                <button class="close-btn" onclick="closeModal('bookModal')">&times;</button>
+            </div>
+            <form id="bookForm" onsubmit="handleBookSubmit(event)">
+                <input type="hidden" id="bookId">
+
+                <div class="form-group">
+                    <label for="isbn">ISBN *</label>
+                    <input type="text" id="isbn" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="title">Title *</label>
+                    <input type="text" id="title" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="author">Author *</label>
+                    <input type="text" id="author" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="publisher">Publisher</label>
+                    <input type="text" id="publisher">
+                </div>
+
+                <div class="form-group">
+                    <label for="publicationYear">Publication Year</label>
+                    <input type="number" id="publicationYear" min="1000" max="2100">
+                </div>
+
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <input type="text" id="category" placeholder="e.g., Fiction, Science, History">
+                </div>
+
+                <div class="form-group">
+                    <label for="totalCopies">Total Copies *</label>
+                    <input type="number" id="totalCopies" min="1" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="availableCopies">Available Copies *</label>
+                    <input type="number" id="availableCopies" min="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" rows="3"></textarea>
+                </div>
+
+                <div class="flex gap-1 mt-2">
+                    <button type="submit" class="btn btn-primary">Save Book</button>
+                    <button type="button" class="btn btn-outline" onclick="closeModal('bookModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        let currentBooks = [];
+
+        async function loadBooksData() {
+            currentBooks = await loadBooks();
+            displayBooks(currentBooks);
+        }
+
+        function displayBooks(books) {
+            const tbody = document.getElementById('booksTableBody');
+
+            if (books.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center">No books found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = books.map(book => `
+                <tr>
+                    <td>${book.isbn}</td>
+                    <td><strong>${book.title}</strong></td>
+                    <td>${book.author}</td>
+                    <td>${book.category || 'N/A'}</td>
+                    <td>${book.totalCopies}</td>
+                    <td>${book.availableCopies}</td>
+                    <td>
+                        <span class="badge ${book.availableCopies > 0 ? 'badge-success' : 'badge-danger'}">
+                            ${book.availableCopies > 0 ? 'Available' : 'Out of Stock'}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="icon-btn" onclick="editBook(${book.id})" title="Edit">✏️</button>
+                            <button class="icon-btn" onclick="deleteBookById(${book.id})" title="Delete">🗑️</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function searchBooks() {
+            const keyword = document.getElementById('searchInput').value;
+            currentBooks = await loadBooks(keyword);
+            displayBooks(currentBooks);
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            loadBooksData();
+        }
+
+        function openAddBookModal() {
+            document.getElementById('modalTitle').textContent = 'Add New Book';
+            document.getElementById('bookForm').reset();
+            document.getElementById('bookId').value = '';
+            openModal('bookModal');
+        }
+
+        async function editBook(id) {
+            const book = currentBooks.find(b => b.id === id);
+            if (!book) return;
+
+            document.getElementById('modalTitle').textContent = 'Edit Book';
+            document.getElementById('bookId').value = book.id;
+            document.getElementById('isbn').value = book.isbn;
+            document.getElementById('title').value = book.title;
+            document.getElementById('author').value = book.author;
+            document.getElementById('publisher').value = book.publisher || '';
+            document.getElementById('publicationYear').value = book.publicationYear || '';
+            document.getElementById('category').value = book.category || '';
+            document.getElementById('totalCopies').value = book.totalCopies;
+            document.getElementById('availableCopies').value = book.availableCopies;
+            document.getElementById('description').value = book.description || '';
+
+            openModal('bookModal');
+        }
+
+        async function handleBookSubmit(event) {
+            event.preventDefault();
+
+            const bookData = {
+                isbn: document.getElementById('isbn').value,
+                title: document.getElementById('title').value,
+                author: document.getElementById('author').value,
+                publisher: document.getElementById('publisher').value || null,
+                publicationYear: parseInt(document.getElementById('publicationYear').value) || null,
+                category: document.getElementById('category').value || null,
+                totalCopies: parseInt(document.getElementById('totalCopies').value),
+                availableCopies: parseInt(document.getElementById('availableCopies').value),
+                description: document.getElementById('description').value || null
+            };
+
+            const bookId = document.getElementById('bookId').value;
+
+            try {
+                if (bookId) {
+                    await updateBook(bookId, bookData);
+                } else {
+                    await createBook(bookData);
+                }
+                closeModal('bookModal');
+                loadBooksData();
+            } catch (error) {
+                console.error('Error saving book:', error);
+            }
+        }
+
+        async function deleteBookById(id) {
+            const success = await deleteBook(id);
+            if (success) {
+                loadBooksData();
+            }
+        }
+
+        // Load books on page load
+        loadBooksData();
+
+        // Search on Enter key
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchBooks();
+        });
+    </script>
+</body>
+
+</html>

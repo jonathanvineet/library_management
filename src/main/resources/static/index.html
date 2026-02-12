@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Management System - Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">📚 LibraryHub</div>
+            <ul class="navbar-nav">
+                <li><a href="index.html" class="nav-link active">Dashboard</a></li>
+                <li><a href="books.html" class="nav-link">Books</a></li>
+                <li><a href="members.html" class="nav-link">Members</a></li>
+                <li><a href="transactions.html" class="nav-link">Transactions</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <h1 style="margin-bottom: 2rem; font-size: 2.5rem;">Dashboard</h1>
+
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalBooks">0</div>
+                <div class="stat-label">Total Books</div>
+            </div>
+            <div class="stat-card secondary">
+                <div class="stat-value" id="availableBooks">0</div>
+                <div class="stat-label">Available Books</div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-value" id="totalMembers">0</div>
+                <div class="stat-label">Active Members</div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-value" id="activeTransactions">0</div>
+                <div class="stat-label">Active Loans</div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="glass-card mb-2">
+            <h2 style="margin-bottom: 1rem;">Quick Actions</h2>
+            <div class="flex gap-1">
+                <a href="books.html" class="btn btn-primary">➕ Add New Book</a>
+                <a href="members.html" class="btn btn-secondary">👤 Register Member</a>
+                <a href="transactions.html" class="btn btn-success">📖 Borrow Book</a>
+            </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="glass-card">
+            <div class="flex-between mb-2">
+                <h2>Recent Transactions</h2>
+                <a href="transactions.html" class="btn btn-outline">View All</a>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Member</th>
+                            <th>Book</th>
+                            <th>Borrow Date</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentTransactions">
+                        <tr>
+                            <td colspan="5" class="text-center">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Overdue Books Alert -->
+        <div class="glass-card mt-2" id="overdueSection" style="display: none;">
+            <h2 style="color: var(--accent-color); margin-bottom: 1rem;">⚠️ Overdue Books</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Member</th>
+                            <th>Book</th>
+                            <th>Due Date</th>
+                            <th>Days Overdue</th>
+                            <th>Fine</th>
+                        </tr>
+                    </thead>
+                    <tbody id="overdueTransactions">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        // Load dashboard data
+        async function loadDashboard() {
+            try {
+                // Load statistics
+                const [books, members, transactions, overdueList] = await Promise.all([
+                    fetchAPI('/api/books'),
+                    fetchAPI('/api/members/active'),
+                    fetchAPI('/api/transactions/active'),
+                    fetchAPI('/api/transactions/overdue')
+                ]);
+
+                // Update statistics
+                document.getElementById('totalBooks').textContent = books.length;
+                document.getElementById('availableBooks').textContent = 
+                    books.filter(b => b.availableCopies > 0).length;
+                document.getElementById('totalMembers').textContent = members.length;
+                document.getElementById('activeTransactions').textContent = transactions.length;
+
+                // Load recent transactions
+                const allTransactions = await fetchAPI('/api/transactions');
+                displayRecentTransactions(allTransactions.slice(0, 5));
+
+                // Display overdue books if any
+                if (overdueList.length > 0) {
+                    displayOverdueTransactions(overdueList);
+                }
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        function displayRecentTransactions(transactions) {
+            const tbody = document.getElementById('recentTransactions');
+            if (transactions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">No recent transactions</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = transactions.map(t => `
+                <tr>
+                    <td>${t.member.name}</td>
+                    <td>${t.book.title}</td>
+                    <td>${formatDate(t.borrowDate)}</td>
+                    <td>${formatDate(t.dueDate)}</td>
+                    <td><span class="badge badge-${getStatusBadge(t.status)}">${t.status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function displayOverdueTransactions(transactions) {
+            const section = document.getElementById('overdueSection');
+            const tbody = document.getElementById('overdueTransactions');
+            
+            section.style.display = 'block';
+            tbody.innerHTML = transactions.map(t => {
+                const daysOverdue = Math.floor((new Date() - new Date(t.dueDate)) / (1000 * 60 * 60 * 24));
+                return `
+                    <tr>
+                        <td>${t.member.name}</td>
+                        <td>${t.book.title}</td>
+                        <td>${formatDate(t.dueDate)}</td>
+                        <td>${daysOverdue} days</td>
+                        <td>$${t.fineAmount || daysOverdue}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function getStatusBadge(status) {
+            const badges = {
+                'BORROWED': 'success',
+                'RETURNED': 'success',
+                'OVERDUE': 'danger',
+                'LOST': 'danger'
+            };
+            return badges[status] || 'success';
+        }
+
+        // Load dashboard on page load
+        loadDashboard();
+    </script>
+</body>
+</html>
