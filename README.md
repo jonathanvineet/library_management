@@ -1,111 +1,172 @@
 # Library Management System
 
-A modern, full-stack library management system built with Spring Boot. This application provides a complete solution for managing library books, members, and transactions with a beautiful glassmorphic UI.
+A modern, full-stack library management system built with Spring Boot featuring **role-based authentication**, **persistent local storage**, and a beautiful glassmorphic UI. Perfect for managing library operations with separate interfaces for librarians and members.
 
 <!-- Azure integration available - see AZURE_SETUP.md for deployment instructions -->
 
+## ✨ What's New
+
+- ✅ **Role-Based Authentication** - Separate access for Librarians and Members
+- ✅ **User Registration** - New users can register via a public registration page
+- ✅ **Persistent Database** - All data saved locally and survives restarts
+- ✅ **Dynamic UI** - Interface adapts based on user role
+- ✅ **Secure API** - HTTP Basic Auth with role-based endpoint protection
+
 ## 🎯 How Everything Works
 
-### Architecture Overview
+### Complete System Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        Frontend (HTML/CSS/JS)                │
+│                    User Authentication                       │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐                  │
+│  │  Login   │  │ Register │  │  Logout  │                  │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘                  │
+│       │             │              │                         │
+└───────┼─────────────┼──────────────┼─────────────────────────┘
+        │             │              │
+        ▼             ▼              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  Spring Security Layer                       │
+│  • HTTP Basic Authentication                                 │
+│  • Password Encoding (BCrypt)                                │
+│  • Role-Based Access Control                                 │
+│  • Session Management                                        │
+└───────┬─────────────────────────────────────────────────────┘
+        │
+        ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   Frontend (HTML/CSS/JS)                     │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
 │  │  Books   │  │ Members  │  │Transactions│ │Dashboard │   │
+│  │          │  │(Librarian│  │            │  │          │   │
+│  │View/Edit │  │  Only)   │  │Borrow/Return│ │ Stats   │   │
 │  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘   │
-│       │             │              │             │          │
 └───────┼─────────────┼──────────────┼─────────────┼──────────┘
         │             │              │             │
         └─────────────┴──────────────┴─────────────┘
                       │
          ┌────────────▼────────────┐
          │   REST API Controllers   │
-         │  (Spring Boot MVC)      │
+         │  • AuthController        │
+         │  • BookController        │
+         │  • MemberController      │
+         │  • TransactionController │
+         │  • UserController        │
          └────────────┬────────────┘
                       │
          ┌────────────▼────────────┐
          │   Service Layer         │
-         │  (Business Logic)       │
+         │  • BookService          │
+         │  • MemberService        │
+         │  • TransactionService   │
+         │  • UserService          │
          └────────────┬────────────┘
                       │
          ┌────────────▼────────────┐
          │   Repository Layer      │
-         │  (Spring Data JPA)      │
+         │  • BookRepository       │
+         │  • MemberRepository     │
+         │  • TransactionRepository│
+         │  • UserRepository       │
          └────────────┬────────────┘
                       │
          ┌────────────▼────────────┐
-         │   Database (H2/Azure)   │
-         │  Books, Members, Trans  │
+         │  H2 File-Based Database │
+         │  📁 ./data/librarydb    │
+         │  Books, Members, Trans, │
+         │  Users (Persistent)     │
          └─────────────────────────┘
 ```
 
-### How It Works:
+### Authentication & Authorization Flow:
 
-1. **Frontend Layer**: 
-   - Single-page HTML interfaces for Books, Members, Transactions, and Dashboard
-   - JavaScript makes REST API calls to the backend
-   - Real-time updates without page refreshes
+1. **User Registration/Login**:
+   - New users register at `/register.html` (public access)
+   - Existing users login at `/login.html` with username/password
+   - Credentials stored with BCrypt password hashing
+   - Two roles: `LIBRARIAN` (full access) or `MEMBER` (read-only)
 
-2. **Controller Layer** (`controller/`):
-   - Receives HTTP requests from frontend
-   - Validates input data
-   - Calls appropriate service methods
-   - Returns JSON responses
+2. **Session Management**:
+   - Credentials stored in browser sessionStorage
+   - HTTP Basic Auth header sent with every API request
+   - Auto-redirect to login on 401/403 errors
+   - Logout clears session and redirects to login
 
-3. **Service Layer** (`service/`):
-   - Contains business logic (fine calculations, availability checks)
-   - Manages transactions (borrow/return books)
-   - Enforces business rules (max books per member, overdue fines)
+3. **Role-Based UI**:
+   - **Librarian View**: Can add/edit/delete books, manage members, process transactions
+   - **Member View**: Can only browse books and view transactions (no modifications)
+   - UI elements show/hide dynamically based on user role
 
-4. **Repository Layer** (`repository/`):
-   - Spring Data JPA interfaces
-   - Provides database operations (CRUD + custom queries)
-   - Automatically generates SQL queries
+4. **API Security**:
+   - All endpoints require authentication (except login/register)
+   - Role-based endpoint protection via `@PreAuthorize`
+   - Books: Members can read, Librarians can modify
+   - Members/Users: Librarian-only access
+   - Transactions: Both can view, only Librarians can create/modify
 
-5. **Model Layer** (`model/`):
-   - JPA entities (Book, Member, Transaction)
-   - Lombok annotations for getters/setters
-   - Database table mappings
+### Database Persistence:
 
-6. **Database**:
-   - **Development**: H2 in-memory database (resets on restart)
-   <!-- - **Production**: Azure SQL Database (persistent) -->
-
-### Key Features Explained:
-
-- **Book Management**: Tracks ISBN, title, author, copies (total & available)
-- **Member Management**: Handles member registration, status, borrowing limits
-- **Transactions**: Records book borrows/returns, calculates fines ($1/day overdue)
-- **Automatic Fine Calculation**: Compares due date with current date
-- **Inventory Tracking**: Updates available copies on borrow/return
+- **File-Based H2 Database** stored in `./data/librarydb.mv.db`
+- **Schema**: Automatically created/updated on startup (`ddl-auto=update`)
+- **Data Retention**: All books, members, transactions, and users persist across restarts
+- **Initialization**: Default users created only on first run
+- **Backup**: Simply copy the `data/` folder
 
 ## 🚀 Features
 
-- **Book Management**: Add, edit, search, and manage book inventory
-- **Member Management**: Register and manage library members
-- **Transaction System**: Borrow and return books with automatic fine calculation
-- **Modern UI**: Glassmorphic design with smooth animations
-- **Azure Integration**: Ready for deployment on Azure with SQL Database
-- **REST API**: Complete RESTful API for all operations
-- **H2 Console**: Built-in database viewer for development
+### Authentication & Security
+- ✅ **User Registration** - Public registration page for new users
+- ✅ **Secure Login** - BCrypt password hashing
+- ✅ **Role-Based Access** - LIBRARIAN (full access) vs MEMBER (read-only)
+- ✅ **Session Management** - Auto-redirect on session expiration
+- ✅ **HTTP Basic Auth** - Secure API authentication
+
+### Core Features
+- 📚 **Book Management** - Add, edit, search, and manage book inventory with ISBN tracking
+- 👥 **Member Management** - Register members with status tracking and borrowing limits
+- 🔄 **Transaction System** - Borrow and return books with automatic due date tracking
+- 💰 **Fine Calculation** - Automatic overdue fine calculation ($1/day)
+- 📊 **Dashboard** - Real-time statistics and recent activity overview
+- 🔍 **Search Functionality** - Search books by title, author, or ISBN
+- 💾 **Persistent Storage** - All data saved locally and survives restarts
+
+### UI & Design
+- 🎨 **Modern Glassmorphic UI** - Beautiful frosted glass design
+- 📱 **Responsive Design** - Works on desktop, tablet, and mobile
+- 🌙 **Dark Theme** - Eye-friendly dark color scheme
+- ⚡ **Real-time Updates** - Dynamic UI updates without page refresh
+- 🎭 **Role-Based UI** - Interface adapts based on user permissions
 
 ## 🛠️ Technology Stack
 
 ### Backend
 - **Spring Boot 3.2.2** - Main application framework
+- **Spring Security 6.2.1** - Authentication and authorization
 - **Spring Data JPA** - Database operations and ORM
-- **Hibernate** - JPA implementation
-- **H2 Database** - In-memory database for local development
-<!-- - **Azure SQL Database** - Production database -->
-- **Maven** - Dependency management and build tool
-- **Lombok** - Reduces boilerplate code (getters/setters/constructors)
-- **Jakarta Validation** - Input validation
+- **Hibernate 6.4.1** - JPA implementation
+- **H2 Database 2.2.224** - File-based database for persistent storage
+- **Maven 3.9+** - Dependency management and build tool
+- **Lombok 1.18.30** - Reduces boilerplate code
+- **Jakarta Validation** - Input validation and bean validation
 
 ### Frontend
-- **HTML5/CSS3** with modern glassmorphic design
-- **Vanilla JavaScript** for API calls and DOM manipulation
-- **Responsive Design** for all screen sizes
+- **HTML5/CSS3** - Modern semantic markup and styling
+- **Vanilla JavaScript** - API calls and DOM manipulation
+- **Responsive Design** - Mobile-first approach
+- **Glassmorphic UI** - Modern frosted glass effect design
+
+### Security
+- **BCrypt Password Encoding** - Secure password hashing
+- **HTTP Basic Authentication** - API security
+- **Role-Based Access Control (RBAC)** - Fine-grained permissions
+- **Session Management** - Secure session handling
+
+### Database
+- **H2 File-Based Storage** - Located at `./data/librarydb.mv.db`
+- **Persistent Data** - Survives application restarts
+- **Auto Schema Management** - Hibernate DDL auto-update
+- **H2 Console** - Built-in database viewer at `/h2-console`
 
 <!-- ### Cloud & DevOps
 - **Azure SQL Database** - Production database
@@ -117,22 +178,97 @@ A modern, full-stack library management system built with Spring Boot. This appl
 ### Required Software
 
 #### For Mac:
-- **Java 21** (LTS) - Installed via Homebrew
-- **Maven 3.9+** - Build tool
-- **Git** - Version control
-- **Terminal** - Command line interface
+```bash
+# Check if you have these installed:
+java -version    # Should be Java 21 or higher
+mvn -version     # Should be Maven 3.9 or higher
+git --version    # Any recent version
+```
+
+**If not installed:**
+- **Java 21 (JDK)** - Install via Homebrew: `brew install openjdk@21`
+- **Maven 3.9+** - Install via Homebrew: `brew install maven`
+- **Git** - Install via Homebrew: `brew install git`
 
 #### For Windows:
-- **Java 21 (JDK)** - Download from [Oracle](https://www.oracle.com/java/technologies/downloads/) or [Adoptium](https://adoptium.net/)
+```cmd
+# Check if you have these installed:
+java -version    REM Should be Java 21 or higher
+mvn -version     REM Should be Maven 3.9 or higher
+git --version    REM Any recent version
+```
+
+**If not installed:**
+- **Java 21 (JDK)** - Download from [Adoptium](https://adoptium.net/temurin/releases/?version=21)
 - **Maven 3.9+** - Download from [Apache Maven](https://maven.apache.org/download.cgi)
 - **Git** - Download from [git-scm.com](https://git-scm.com/)
-- **Command Prompt or PowerShell** - Command line interface
 
 #### Optional:
-<!-- - **Azure account** - For production deployment -->
-- **IDE** - IntelliJ IDEA, VS Code, or Eclipse
+- **IDE** - IntelliJ IDEA, VS Code, or Eclipse (for development)
+- **Postman** - For API testing (optional)
 
-## 🏃 Installation & Setup
+### System Requirements
+- **RAM**: 2GB minimum, 4GB recommended
+- **Disk Space**: 500MB for application and dependencies
+- **OS**: macOS 10.14+, Windows 10+, or Linux
+
+## 🏃 Quick Start Guide
+
+### 1️⃣ Clone the Repository
+```bash
+git clone https://github.com/jonathanvineet/library_management.git
+cd library_management
+```
+
+### 2️⃣ Verify Java & Maven
+```bash
+# Check Java version (must be 21+)
+java -version
+
+# Check Maven version (must be 3.9+)
+mvn -version
+```
+
+### 3️⃣ Build the Application
+```bash
+mvn clean install -DskipTests
+```
+This will download all dependencies and build the project.
+
+### 4️⃣ Run the Application
+```bash
+mvn spring-boot:run
+```
+
+You should see:
+```
+Started LibraryManagementApplication in X.XXX seconds
+```
+
+### 5️⃣ Access the Application
+Open your browser and go to: **http://localhost:8080**
+
+You'll be redirected to the login page automatically.
+
+### 6️⃣ Login with Default Credentials
+
+**Librarian Account (Full Access):**
+- Username: `librarian`
+- Password: `librarian123`
+
+**Member Account (Read-Only):**
+- Username: `member`
+- Password: `member123`
+
+### 7️⃣ Start Using!
+- **Add Books**: Go to Books page and click "Add New Book"
+- **Register Members**: Go to Members page (librarian only)
+- **Borrow Books**: Go to Transactions page
+- **View Dashboard**: See statistics and recent activity
+
+---
+
+## 📝 Detailed Setup Instructions
 
 ### For Mac (macOS)
 
@@ -167,19 +303,16 @@ mvn -version
 # Should show: Apache Maven 3.9.x
 ```
 
-#### Step 4: Clone the Repository
+#### Step 4: Clone and Run
 ```bash
-git clone <your-repository-url>
+# Clone the repository
+git clone https://github.com/jonathanvineet/library_management.git
 cd library_management
-```
 
-#### Step 5: Build the Project
-```bash
-mvn clean install
-```
+# Build the project
+mvn clean install -DskipTests
 
-#### Step 6: Run the Application
-```bash
+# Run the application
 mvn spring-boot:run
 ```
 
@@ -197,12 +330,13 @@ The application will start on: **http://localhost:8080**
    - Run the installer and follow the wizard
 
 2. **Set JAVA_HOME Environment Variable**:
-   - Open **System Properties** → **Advanced** → **Environment Variables**
+   - Press `Win + X` → Select **System**
+   - Click **Advanced system settings** → **Environment Variables**
    - Under **System Variables**, click **New**:
      - Variable name: `JAVA_HOME`
      - Variable value: `C:\Program Files\Eclipse Adoptium\jdk-21.x.x` (your actual path)
    - Edit the **Path** variable:
-     - Add: `%JAVA_HOME%\bin`
+     - Click **New** → Add: `%JAVA_HOME%\bin`
    - Click **OK** on all dialogs
 
 3. **Verify Installation**:
@@ -219,12 +353,12 @@ The application will start on: **http://localhost:8080**
    - Extract to `C:\Program Files\Apache\maven`
 
 2. **Set Maven Environment Variables**:
-   - Open **System Properties** → **Advanced** → **Environment Variables**
+   - Open **Environment Variables** (same as above)
    - Under **System Variables**, click **New**:
      - Variable name: `MAVEN_HOME`
      - Variable value: `C:\Program Files\Apache\maven`
    - Edit the **Path** variable:
-     - Add: `%MAVEN_HOME%\bin`
+     - Click **New** → Add: `%MAVEN_HOME%\bin`
 
 3. **Verify Installation**:
    ```cmd
@@ -236,19 +370,16 @@ The application will start on: **http://localhost:8080**
 - Download from [git-scm.com](https://git-scm.com/)
 - Run installer with default settings
 
-#### Step 4: Clone the Repository
+#### Step 4: Clone and Run
 ```cmd
-git clone <your-repository-url>
+# Clone the repository
+git clone https://github.com/jonathanvineet/library_management.git
 cd library_management
-```
 
-#### Step 5: Build the Project
-```cmd
-mvn clean install
-```
+# Build the project
+mvn clean install -DskipTests
 
-#### Step 6: Run the Application
-```cmd
+# Run the application
 mvn spring-boot:run
 ```
 
@@ -256,39 +387,130 @@ The application will start on: **http://localhost:8080**
 
 ---
 
+## ⚙️ Configuration Details
+
+### Database Configuration
+
+The application uses **H2 Database** in **file-based persistent mode**.
+
+**Configuration File**: [`application.properties`](src/main/resources/application.properties)
+
+```properties
+# Server Port
+server.port=8080
+
+# H2 Database - File-based (Persistent Storage)
+spring.datasource.url=jdbc:h2:file:./data/librarydb
+spring.datasource.driverClassName=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=
+
+# JPA Settings
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+# H2 Console (for development/debugging)
+spring.h2.console.enabled=true
+spring.h2.console.path=/h2-console
+```
+
+### What This Configuration Does:
+
+✅ **Persistent Storage**: All data (books, members, transactions, users) is saved to `./data/librarydb.mv.db`  
+✅ **Data Survives Restarts**: When you stop and restart the application, all your data is preserved  
+✅ **Automatic Schema Updates**: The database schema automatically updates when you modify entity classes (`ddl-auto=update`)  
+✅ **Default Users Created Once**: On first run, default librarian and member accounts are created automatically  
+✅ **SQL Logging**: All SQL queries are logged to console for debugging (can be disabled in production)
+
+### Database Files Location:
+```
+library_management/
+└── data/
+    ├── librarydb.mv.db       ← Main database file (contains all tables and data)
+    └── librarydb.trace.db    ← Trace/log file (for debugging)
+```
+
+### Accessing H2 Console (Optional for Database Inspection):
+
+1. **Start the application** (`mvn spring-boot:run`)
+2. **Open browser**: http://localhost:8080/h2-console
+3. **Login with these settings**:
+   - **JDBC URL**: `jdbc:h2:file:./data/librarydb`
+   - **Username**: `sa`
+   - **Password**: *(leave empty)*
+4. **Click "Connect"**
+
+You can now view and query all tables directly!
+
+**Available Tables**:
+- `USERS` - System users (librarian, members)
+- `BOOK` - Book catalog
+- `MEMBER` - Library members
+- `TRANSACTION` - Borrow/return records
+
+---
+
 ## 🌐 Accessing the Application
 
 Once the application is running, open your web browser and navigate to:
 
-- **Login Page**: http://localhost:8080/login.html
-- **Main Application**: http://localhost:8080 (redirects to login if not authenticated)
-- **H2 Database Console**: http://localhost:8080/h2-console
-  - JDBC URL: `jdbc:h2:file:./data/librarydb`
-  - Username: `sa`
-  - Password: (leave empty)
+| URL | Description | Authentication |
+|-----|-------------|----------------|
+| http://localhost:8080 | Main application (redirects to login) | Required |
+| http://localhost:8080/login.html | Login page | Public |
+| http://localhost:8080/register.html | User registration | Public |
+| http://localhost:8080/index.html | Dashboard | Required |
+| http://localhost:8080/books.html | Books management | Required |
+| http://localhost:8080/members.html | Members management | Librarian only |
+| http://localhost:8080/transactions.html | Transactions | Required |
+| http://localhost:8080/h2-console | Database console | Public (Dev only) |
+
+---
 
 ### 🔐 Default Login Credentials
 
-The system comes with two pre-configured users:
+The system comes with two pre-configured users (created automatically on first run):
 
-#### Librarian Account (Full Access)
+#### 👨‍💼 Librarian Account (Full Access)
 - **Username**: `librarian`
 - **Password**: `librarian123`
-- **Permissions**: 
-  - Manage books (create, update, delete)
-  - Manage members
-  - Manage all transactions
-  - View all statistics
+- **Capabilities**: 
+  - ✅ Manage books (create, update, delete)
+  - ✅ Manage members (register, update, delete)
+  - ✅ Manage all transactions (borrow, return)
+  - ✅ View all statistics and reports
+  - ✅ Access all pages and features
 
-#### Member Account (Limited Access)
+#### 👤 Member Account (Read-Only)
 - **Username**: `member`
 - **Password**: `member123`
-- **Permissions**:
-  - View books
-  - View own transactions
-  - Search books
+- **Capabilities**:
+  - ✅ View books catalog
+  - ✅ Search for books
+  - ✅ View own transaction history
+  - ❌ Cannot add/edit/delete books
+  - ❌ Cannot access member management
+  - ❌ Cannot create transactions
 
-### User Roles & Permissions
+### 🔑 User Registration
+
+New users can register themselves:
+1. Go to http://localhost:8080/register.html
+2. Fill in the registration form:
+   - Full Name
+   - Username (must be unique)
+   - Email address
+   - Password (min 6 characters)
+   - Confirm Password
+   - Select Role (LIBRARIAN or MEMBER)
+3. Click "Register"
+4. After successful registration, you'll be redirected to login page
+5. Login with your new credentials
+
+---
+
+### 👥 User Roles & Permissions Summary
 
 | Feature | Librarian | Member |
 |---------|-----------|--------|
@@ -299,59 +521,150 @@ The system comes with two pre-configured users:
 | View All Transactions | ✅ | ✅ |
 | Create Transactions (Borrow/Return) | ✅ | ❌ |
 | Manage Users | ✅ | ❌ |
+| Register New Users | ✅ | ✅ (via public page) |
 
-### Available Pages (after login):
-- **Dashboard**: http://localhost:8080/index.html
-- **Books Management**: http://localhost:8080/books.html
-- **Members Management**: http://localhost:8080/members.html (Librarian only)
-- **Transactions**: http://localhost:8080/transactions.html
+---
 
 ## 📱 Using the Application
 
-### First Time Setup
-1. Start the application
-2. Navigate to http://localhost:8080
-3. You'll be redirected to the login page
-4. Use one of the default credentials above
-5. After login, you'll see the dashboard
+### 🚀 First Time Setup
+1. **Start the application**: `mvn spring-boot:run`
+2. **Open browser**: http://localhost:8080
+3. **You'll be redirected to login page** automatically
+4. **Login** with one of the default credentials:
+   - Librarian: `librarian` / `librarian123`
+   - Member: `member` / `member123`
+5. **After login**: You'll see the dashboard with statistics
 
-### 1. Dashboard
-- View real-time statistics
-- See total books, available books, active members, and active loans
-- Quick access to all modules
+---
 
-### 2. Books Management
-1. Click "Add New Book" to add a book
-2. Fill in: ISBN, Title, Author, Publisher, Year, Category, Description
-3. Set Total Copies (Available Copies is set automatically)
-4. Search books using the search bar
-5. Edit or delete existing books
+### 📊 1. Dashboard (Home Page)
+**URL**: http://localhost:8080/index.html
 
-### 3. Members Management
-1. Click "Register New Member" to add a member
-2. Fill in: Name, Email, Phone, Address
-3. Set Max Books Allowed (default: 5)
-4. Member status is ACTIVE by default
-5. Search members by name
+**Features**:
+- 📈 View real-time statistics:
+  - Total Books in library
+  - Available Books for borrowing
+  - Active Members registered
+  - Active Loans (books currently borrowed)
+- 🎯 Quick Actions (role-dependent):
+  - **Librarians**: Add Book, Register Member, Borrow Book
+  - **Members**: Browse Books, View Transactions
+- 🔄 Recent Activity feed
+- 📝 Easy navigation to all modules
 
-### 4. Transactions (Borrow/Return)
-1. **To Borrow**:
-   - Click "New Transaction"
-   - Select Member (from dropdown)
-   - Select Book (from dropdown)
-   - Set Due Date
-   - Click "Borrow Book"
+---
 
-2. **To Return**:
-   - Find the transaction in the list
-   - Click "Return" button
-   - Fine is calculated automatically if overdue
+### 📚 2. Books Management
+**URL**: http://localhost:8080/books.html  
+**Access**: All authenticated users (Librarians can edit, Members can only view)
 
-3. **Filter Transactions**:
-   - All Transactions
-   - Active Loans
-   - Overdue
-   - Returned
+#### For Librarians:
+1. **Add New Book**:
+   - Click "Add New Book" button
+   - Fill in the form:
+     - **ISBN**: Unique book identifier (e.g., 978-0-123456-78-9)
+     - **Title**: Book name
+     - **Author**: Author name
+     - **Publisher**: Publishing company
+     - **Publication Year**: Year of publication (e.g., 2024)
+     - **Category**: Genre (Fiction, Non-Fiction, Science, etc.)
+     - **Description**: Brief summary
+     - **Total Copies**: Number of copies in library
+   - Click "Add Book"
+
+2. **Edit Existing Book**:
+   - Find the book in the list
+   - Click "Edit" button
+   - Modify any field
+   - Click "Update Book"
+
+3. **Delete Book**:
+   - Find the book in the list
+   - Click "Delete" button
+   - Confirm deletion
+
+4. **Search Books**:
+   - Use search bar to find books by title, author, or ISBN
+   - Results update in real-time
+
+#### For Members:
+- **View-Only Mode**: Can browse and search books
+- **No Edit/Delete buttons**: Interface automatically hides modification options
+- Shows "View Only" label at the top
+
+---
+
+### 👥 3. Members Management
+**URL**: http://localhost:8080/members.html  
+**Access**: Librarian only (Members are automatically redirected)
+
+#### Operations:
+1. **Register New Member**:
+   - Click "Register New Member"
+   - Fill in the form:
+     - **Name**: Full name
+     - **Email**: Email address (must be unique)
+     - **Phone**: Contact number
+     - **Address**: Residential address
+     - **Max Books Allowed**: Borrowing limit (default: 5)
+   - Status is set to ACTIVE automatically
+   - Click "Register Member"
+
+2. **Edit Member**:
+   - Find member in the list
+   - Click "Edit" button
+   - Update information
+   - Click "Update Member"
+
+3. **Delete Member**:
+   - Find member in the list
+   - Click "Delete" button
+   - Confirm deletion
+   - **Note**: Cannot delete members with active loans
+
+4. **Search Members**:
+   - Use search bar to find members by name
+   - Results update in real-time
+
+---
+
+### 🔄 4. Transactions (Borrow/Return Books)
+**URL**: http://localhost:8080/transactions.html  
+**Access**: All authenticated users (Librarians can borrow/return, Members can only view)
+
+#### For Librarians:
+
+**To Borrow a Book**:
+1. Click "New Transaction" button
+2. **Select Member**: Choose from dropdown (shows active members only)
+3. **Select Book**: Choose from dropdown (shows available books only)
+4. **Set Due Date**: Pick a return date (default: 14 days from today)
+5. Click "Borrow Book"
+6. **Validations**:
+   - Member must not have reached max borrowing limit
+   - Book must have available copies
+   - Member must not have overdue books
+
+**To Return a Book**:
+1. Find the active transaction in the list
+2. Click "Return" button next to the transaction
+3. **Automatic Fine Calculation**:
+   - If returned on time: No fine
+   - If overdue: ₹10 per day
+4. Book becomes available again
+5. Member's borrowed count decreases
+
+#### For Members:
+- **View-Only Mode**: Can see all transactions
+- **No Borrow/Return buttons**: Interface automatically hides action buttons
+- Can search and filter transactions
+
+#### Filter Options:
+- **All Transactions**: Shows everything
+- **Active Loans**: Currently borrowed books
+- **Overdue**: Books past due date
+- **Returned**: Completed transactions
 
 ## 🔌 API Endpoints
 
