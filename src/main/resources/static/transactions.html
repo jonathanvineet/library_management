@@ -17,8 +17,12 @@
             <ul class="navbar-nav">
                 <li><a href="index.html" class="nav-link">Dashboard</a></li>
                 <li><a href="books.html" class="nav-link">Books</a></li>
-                <li><a href="members.html" class="nav-link">Members</a></li>
+                <li><a href="members.html" class="nav-link" id="membersNav">Members</a></li>
                 <li><a href="transactions.html" class="nav-link active">Transactions</a></li>
+                <li class="user-info">
+                    <span id="userDisplay"></span>
+                    <button onclick="logout()" class="btn-logout">Logout</button>
+                </li>
             </ul>
         </div>
     </nav>
@@ -27,7 +31,7 @@
     <div class="container">
         <div class="flex-between mb-2">
             <h1>Transaction Management</h1>
-            <button class="btn btn-primary" onclick="openBorrowModal()">📖 Borrow Book</button>
+            <button class="btn btn-primary" onclick="openBorrowModal()" id="borrowBtn">📖 Borrow Book</button>
         </div>
 
         <!-- Filter Buttons -->
@@ -104,6 +108,32 @@
         let allTransactions = [];
         let currentFilter = 'all';
 
+        // Initialize page with authentication
+        function initPage() {
+            if (!checkAuth()) return;
+            
+            const role = getUserRole();
+            const username = getUsername();
+            const fullName = sessionStorage.getItem('fullName');
+            
+            // Display user info
+            document.getElementById('userDisplay').textContent = `${fullName || username} (${role})`;
+            
+            // Hide elements based on role
+            if (role === 'MEMBER') {
+                // Members cannot borrow books (only librarians can process transactions)
+                const borrowBtn = document.getElementById('borrowBtn');
+                if (borrowBtn) borrowBtn.style.display = 'none';
+                
+                // Hide members nav
+                const membersNav = document.getElementById('membersNav');
+                if (membersNav) membersNav.style.display = 'none';
+            }
+            
+            // Load transactions
+            loadTransactionsData();
+        }
+
         async function loadTransactionsData() {
             allTransactions = await loadTransactions();
             displayTransactions(allTransactions);
@@ -111,6 +141,7 @@
 
         function displayTransactions(transactions) {
             const tbody = document.getElementById('transactionsTableBody');
+            const role = getUserRole();
 
             if (transactions.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="8" class="text-center">No transactions found</td></tr>';
@@ -120,6 +151,14 @@
             tbody.innerHTML = transactions.map(t => {
                 const isOverdue = t.status === 'BORROWED' && new Date(t.dueDate) < new Date();
                 const canReturn = t.status === 'BORROWED' || t.status === 'OVERDUE';
+
+                // Only librarians can return books
+                const returnButton = (role === 'LIBRARIAN' && canReturn) 
+                    ? `<button class="btn btn-success" style="padding: 0.25rem 0.75rem; font-size: 0.85rem;" 
+                                onclick="returnBookById(${t.id})">
+                            Return
+                        </button>`
+                    : '-';
 
                 return `
                     <tr>
@@ -135,12 +174,7 @@
                         </td>
                         <td>${t.fineAmount > 0 ? '$' + t.fineAmount : '-'}</td>
                         <td>
-                            ${canReturn ? `
-                                <button class="btn btn-success" style="padding: 0.25rem 0.75rem; font-size: 0.85rem;" 
-                                        onclick="returnBookById(${t.id})">
-                                    Return
-                                </button>
-                            ` : '-'}
+                            ${returnButton}
                         </td>
                     </tr>
                 `;
@@ -227,8 +261,8 @@
             }
         }
 
-        // Load transactions on page load
-        loadTransactionsData();
+        // Initialize page on load
+        initPage();
     </script>
 </body>
 

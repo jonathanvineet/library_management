@@ -19,6 +19,10 @@
                 <li><a href="books.html" class="nav-link">Books</a></li>
                 <li><a href="members.html" class="nav-link active">Members</a></li>
                 <li><a href="transactions.html" class="nav-link">Transactions</a></li>
+                <li class="user-info">
+                    <span id="userDisplay"></span>
+                    <button onclick="logout()" class="btn-logout">Logout</button>
+                </li>
             </ul>
         </div>
     </nav>
@@ -117,6 +121,31 @@
     <script src="js/app.js"></script>
     <script>
         let currentMembers = [];
+
+        // Initialize page with authentication (librarian only)
+        function initPage() {
+            if (!checkAuth()) return;
+            
+            const role = getUserRole();
+            
+            // Only librarians can access this page
+            if (role !== 'LIBRARIAN') {
+                showNotification('Access denied. Only librarians can manage members.', 'error');
+                setTimeout(() => {
+                    window.location.href = '/index.html';
+                }, 2000);
+                return;
+            }
+            
+            const username = getUsername();
+            const fullName = sessionStorage.getItem('fullName');
+            
+            // Display user info
+            document.getElementById('userDisplay').textContent = `${fullName || username} (${role})`;
+            
+            // Load members data
+            loadMembersData();
+        }
 
         async function loadMembersData() {
             currentMembers = await loadMembers();
@@ -232,8 +261,8 @@
             }
         }
 
-        // Load members on page load
-        loadMembersData();
+        // Initialize page on load
+        initPage();
 
         // Search on Enter key
         document.getElementById('searchInput').addEventListener('keypress', (e) => {

@@ -1,6 +1,8 @@
 # Library Management System
 
-A modern, full-stack library management system built with Spring Boot and Azure integration. This application provides a complete solution for managing library books, members, and transactions with a beautiful glassmorphic UI.
+A modern, full-stack library management system built with Spring Boot. This application provides a complete solution for managing library books, members, and transactions with a beautiful glassmorphic UI.
+
+<!-- Azure integration available - see AZURE_SETUP.md for deployment instructions -->
 
 ## 🎯 How Everything Works
 
@@ -68,7 +70,7 @@ A modern, full-stack library management system built with Spring Boot and Azure 
 
 6. **Database**:
    - **Development**: H2 in-memory database (resets on restart)
-   - **Production**: Azure SQL Database (persistent)
+   <!-- - **Production**: Azure SQL Database (persistent) -->
 
 ### Key Features Explained:
 
@@ -95,7 +97,7 @@ A modern, full-stack library management system built with Spring Boot and Azure 
 - **Spring Data JPA** - Database operations and ORM
 - **Hibernate** - JPA implementation
 - **H2 Database** - In-memory database for local development
-- **Azure SQL Database** - Production database
+<!-- - **Azure SQL Database** - Production database -->
 - **Maven** - Dependency management and build tool
 - **Lombok** - Reduces boilerplate code (getters/setters/constructors)
 - **Jakarta Validation** - Input validation
@@ -105,10 +107,10 @@ A modern, full-stack library management system built with Spring Boot and Azure 
 - **Vanilla JavaScript** for API calls and DOM manipulation
 - **Responsive Design** for all screen sizes
 
-### Cloud & DevOps
+<!-- ### Cloud & DevOps
 - **Azure SQL Database** - Production database
 - **Azure App Service** - Application hosting
-- **GitHub Actions** - CI/CD pipeline (optional)
+- **GitHub Actions** - CI/CD pipeline (optional) -->
 
 ## 📋 Prerequisites
 
@@ -127,7 +129,7 @@ A modern, full-stack library management system built with Spring Boot and Azure 
 - **Command Prompt or PowerShell** - Command line interface
 
 #### Optional:
-- **Azure account** - For production deployment
+<!-- - **Azure account** - For production deployment -->
 - **IDE** - IntelliJ IDEA, VS Code, or Eclipse
 
 ## 🏃 Installation & Setup
@@ -261,7 +263,7 @@ Once the application is running, open your web browser and navigate to:
 - **Login Page**: http://localhost:8080/login.html
 - **Main Application**: http://localhost:8080 (redirects to login if not authenticated)
 - **H2 Database Console**: http://localhost:8080/h2-console
-  - JDBC URL: `jdbc:h2:mem:librarydb`
+  - JDBC URL: `jdbc:h2:file:./data/librarydb`
   - Username: `sa`
   - Password: (leave empty)
 
@@ -520,12 +522,14 @@ library_management/
 
 ## 🔧 Configuration
 
-### Local Development (H2 Database)
-The application uses H2 in-memory database by default. Configuration in `application.properties`:
+### Local Development (H2 File-Based Database)
+The application uses **persistent H2 file-based database** which stores all data locally. Your data will be preserved across application restarts.
+
+Configuration in `application.properties`:
 
 ```properties
-# H2 Database
-spring.datasource.url=jdbc:h2:mem:librarydb
+# H2 File-Based Database (Persistent Storage)
+spring.datasource.url=jdbc:h2:file:./data/librarydb
 spring.datasource.driver-class-name=org.h2.Driver
 spring.datasource.username=sa
 spring.datasource.password=
@@ -534,13 +538,21 @@ spring.datasource.password=
 spring.h2.console.enabled=true
 spring.h2.console.path=/h2-console
 
-# JPA Configuration
-spring.jpa.hibernate.ddl-auto=create-drop  # Recreates DB on restart
+# JPA Configuration - 'update' keeps data across restarts
+spring.jpa.hibernate.ddl-auto=update
 ```
 
-**Note**: With `create-drop`, the database is cleared on each restart. Default users are recreated automatically.
+**Database Location**: `./data/librarydb.mv.db` (in project root)
 
-### Production (Azure SQL Database)
+**Features**:
+- ✅ All books, members, transactions, and users persist across restarts
+- ✅ No data loss when stopping/starting the application
+- ✅ Database files stored locally in the `data/` folder
+- ✅ Easy backup (just copy the `data/` folder)
+
+**Note**: With `ddl-auto=update`, the schema is updated automatically but data is never deleted. The database file will be created automatically on first run.
+
+<!-- ### Production (Azure SQL Database)
 For Azure deployment, use `application-azure.properties`:
 
 ```properties
@@ -551,7 +563,7 @@ spring.datasource.password=${AZURE_SQL_PASSWORD}
 
 # JPA Configuration
 spring.jpa.hibernate.ddl-auto=update  # Updates schema without data loss
-```
+``` -->
 
 ## 🐛 Troubleshooting
 
@@ -604,7 +616,7 @@ spring.h2.console.path=/h2-console
 - **Dark Theme**: Eye-friendly dark color scheme
 - **Modern Typography**: Clean, readable fonts
 
-## ☁️ Azure Deployment
+<!-- ## ☁️ Azure Deployment
 
 For production deployment to Azure, see [AZURE_SETUP.md](AZURE_SETUP.md) for detailed instructions.
 
@@ -622,7 +634,7 @@ mvn clean package -DskipTests
 az webapp deploy --resource-group <resource-group> \
                  --name <app-name> \
                  --src-path target/library-management-1.0.0.jar
-```
+``` -->
 
 ## 🔒 Security Features
 
@@ -686,7 +698,7 @@ Book (1) ←→ (Many) Transaction (Many) ←→ (1) Member
 
 ## 🚀 Future Enhancements
 
-- [ ] User authentication and role-based access control
+- [x] User authentication and role-based access control
 - [ ] Email notifications for due dates and overdue books
 - [ ] Advanced reporting and analytics dashboard
 - [ ] Book reservation/hold system
@@ -715,7 +727,7 @@ Contributions are welcome! To contribute:
 For issues, questions, or suggestions:
 - Open an issue on GitHub
 - Check existing issues for solutions
-- Review the [AZURE_SETUP.md](AZURE_SETUP.md) for deployment help
+<!-- - Review the [AZURE_SETUP.md](AZURE_SETUP.md) for deployment help -->
 
 ## 🙏 Acknowledgments
 

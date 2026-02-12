@@ -16,7 +16,8 @@
     <artifactId>library-management</artifactId>
     <version>1.0.0</version>
     <name>Library Management System</name>
-    <description>Modern library management system with Azure integration</description>
+    <!-- <description>Modern library management system with Azure integration</description> -->
+    <description>Modern library management system</description>
     
     <properties>
         <java.version>21</java.version>
@@ -50,11 +51,13 @@
         </dependency>
         
         <!-- MS SQL Server Driver for Azure SQL -->
+        <!--
         <dependency>
             <groupId>com.microsoft.sqlserver</groupId>
             <artifactId>mssql-jdbc</artifactId>
             <scope>runtime</scope>
         </dependency>
+        -->
         
         <!-- H2 Database for local development -->
         <dependency>

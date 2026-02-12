@@ -19,6 +19,19 @@ public class UserController {
 
     private final UserService userService;
 
+    // Public registration endpoint (no authentication required)
+    @PostMapping("/register")
+    public ResponseEntity<?> registerUser(@Valid @RequestBody User user) {
+        try {
+            User createdUser = userService.createUser(user);
+            // Remove password from response
+            createdUser.setPassword(null);
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @GetMapping
     @PreAuthorize("hasRole('LIBRARIAN')")
     public ResponseEntity<List<User>> getAllUsers() {

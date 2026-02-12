@@ -52,12 +52,10 @@
         </div>
 
         <!-- Quick Actions -->
-        <div class="glass-card mb-2">
+        <div class="glass-card mb-2" id="quickActionsCard">
             <h2 style="margin-bottom: 1rem;">Quick Actions</h2>
-            <div class="flex gap-1">
-                <a href="books.html" class="btn btn-primary">➕ Add New Book</a>
-                <a href="members.html" class="btn btn-secondary">👤 Register Member</a>
-                <a href="transactions.html" class="btn btn-success">📖 Borrow Book</a>
+            <div class="flex gap-1" id="quickActions">
+                <!-- Actions will be populated based on user role -->
             </div>
         </div>
 
@@ -110,31 +108,85 @@
 
     <script src="js/app.js"></script>
     <script>
+        // Check authentication and setup page
+        function initDashboard() {
+            if (!checkAuth()) return;
+            
+            const role = getUserRole();
+            const username = getUsername();
+            const fullName = sessionStorage.getItem('fullName');
+            
+            // Display user info
+            document.getElementById('userDisplay').textContent = `${fullName || username} (${role})`;
+            
+            // Setup quick actions based on role
+            setupQuickActions(role);
+            
+            // Hide Members nav for non-librarians
+            if (role !== 'LIBRARIAN') {
+                document.getElementById('membersNav').style.display = 'none';
+            }
+            
+            // Load dashboard data
+            loadDashboard();
+        }
+
+        function setupQuickActions(role) {
+            const quickActions = document.getElementById('quickActions');
+            
+            if (role === 'LIBRARIAN') {
+                // Librarian has full access
+                quickActions.innerHTML = `
+                    <a href="books.html" class="btn btn-primary">➕ Add New Book</a>
+                    <a href="members.html" class="btn btn-secondary">👤 Register Member</a>
+                    <a href="transactions.html" class="btn btn-success">📖 Borrow Book</a>
+                `;
+            } else {
+                // Member has limited access
+                quickActions.innerHTML = `
+                    <a href="books.html" class="btn btn-primary">📚 Browse Books</a>
+                    <a href="transactions.html" class="btn btn-secondary">📖 View Transactions</a>
+                `;
+            }
+        }
+
         // Load dashboard data
         async function loadDashboard() {
             try {
+                const role = getUserRole();
+                
                 // Load statistics
-                const [books, members, transactions, overdueList] = await Promise.all([
-                    fetchAPI('/api/books'),
-                    fetchAPI('/api/members/active'),
-                    fetchAPI('/api/transactions/active'),
-                    fetchAPI('/api/transactions/overdue')
-                ]);
-
+                const books = await fetchAPI('/api/books');
+                
                 // Update statistics
                 document.getElementById('totalBooks').textContent = books.length;
                 document.getElementById('availableBooks').textContent = 
                     books.filter(b => b.availableCopies > 0).length;
-                document.getElementById('totalMembers').textContent = members.length;
-                document.getElementById('activeTransactions').textContent = transactions.length;
-
-                // Load recent transactions
-                const allTransactions = await fetchAPI('/api/transactions');
-                displayRecentTransactions(allTransactions.slice(0, 5));
-
-                // Display overdue books if any
-                if (overdueList.length > 0) {
-                    displayOverdueTransactions(overdueList);
+                
+                // Load members and transactions (librarian only)
+                if (role === 'LIBRARIAN') {
+                    const [members, transactions, overdueList] = await Promise.all([
+                        fetchAPI('/api/members/active'),
+                        fetchAPI('/api/transactions/active'),
+                        fetchAPI('/api/transactions/overdue')
+                    ]);
+                    
+                    document.getElementById('totalMembers').textContent = members.length;
+                    document.getElementById('activeTransactions').textContent = transactions.length;
+                    
+                    // Load all transactions for recent view
+                    const allTransactions = await fetchAPI('/api/transactions');
+                    displayRecentTransactions(allTransactions.slice(0, 5));
+                    
+                    // Display overdue books if any
+                    if (overdueList.length > 0) {
+                        displayOverdueTransactions(overdueList);
+                    }
+                } else {
+                    // Members see limited stats
+                    document.getElementById('totalMembers').textContent = '-';
+                    document.getElementById('activeTransactions').textContent = '-';
+                    displayRecentTransactions([]);
                 }
             } catch (error) {
                 console.error('Error loading dashboard:', error);
@@ -188,49 +240,8 @@
             return badges[status] || 'success';
         }
 
-        // Check authentication
-        function checkAuth() {
-            const credentials = sessionStorage.getItem('authCredentials');
-            const username = sessionStorage.getItem('username');
-            const fullName = sessionStorage.getItem('fullName');
-            const role = sessionStorage.getItem('userRole');
-            
-            if (!credentials) {
-                window.location.href = '/login.html';
-                return false;
-            }
-            
-            // Display user info
-            document.getElementById('userDisplay').textContent = `${fullName || username} (${role})`;
-            
-            // Hide Members nav for non-librarians
-            if (role !== 'LIBRARIAN') {
-                document.getElementById('membersNav').style.display = 'none';
-            }
-            
-            return credentials;
-        }
-
-        function logout() {
-            sessionStorage.clear();
-            window.location.href = '/login.html';
-        }
-
-        // Add auth header to fetch requests
-        function authFetch(url, options = {}) {
-            const credentials = sessionStorage.getItem('authCredentials');
-            const headers = {
-                ...options.headers,
-                'Authorization': 'Basic ' + credentials
-            };
-            return fetch(url, { ...options, headers });
-        }
-
-        // Check auth on load
-        checkAuth();
-
-        // Load dashboard on page load
-        loadDashboard();
+        // Initialize dashboard on page load
+        initDashboard();
     </script>
 </body>
 </html>

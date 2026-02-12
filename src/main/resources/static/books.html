@@ -17,8 +17,12 @@
             <ul class="navbar-nav">
                 <li><a href="index.html" class="nav-link">Dashboard</a></li>
                 <li><a href="books.html" class="nav-link active">Books</a></li>
-                <li><a href="members.html" class="nav-link">Members</a></li>
+                <li><a href="members.html" class="nav-link" id="membersNav">Members</a></li>
                 <li><a href="transactions.html" class="nav-link">Transactions</a></li>
+                <li class="user-info">
+                    <span id="userDisplay"></span>
+                    <button onclick="logout()" class="btn-logout">Logout</button>
+                </li>
             </ul>
         </div>
     </nav>
@@ -27,7 +31,7 @@
     <div class="container">
         <div class="flex-between mb-2">
             <h1>Book Management</h1>
-            <button class="btn btn-primary" onclick="openAddBookModal()">➕ Add New Book</button>
+            <button class="btn btn-primary" onclick="openAddBookModal()" id="addBookBtn">➕ Add New Book</button>
         </div>
 
         <!-- Search Bar -->
@@ -130,6 +134,32 @@
     <script>
         let currentBooks = [];
 
+        // Check authentication and initialize page
+        function initPage() {
+            if (!checkAuth()) return;
+            
+            const role = getUserRole();
+            const username = getUsername();
+            const fullName = sessionStorage.getItem('fullName');
+            
+            // Display user info
+            document.getElementById('userDisplay').textContent = `${fullName || username} (${role})`;
+            
+            // Hide elements based on role
+            if (role === 'MEMBER') {
+                // Members cannot add/edit/delete books
+                const addBookBtn = document.getElementById('addBookBtn');
+                if (addBookBtn) addBookBtn.style.display = 'none';
+                
+                // Hide members nav
+                const membersNav = document.getElementById('membersNav');
+                if (membersNav) membersNav.style.display = 'none';
+            }
+            
+            // Load books data
+            loadBooksData();
+        }
+
         async function loadBooksData() {
             currentBooks = await loadBooks();
             displayBooks(currentBooks);
@@ -137,33 +167,41 @@
 
         function displayBooks(books) {
             const tbody = document.getElementById('booksTableBody');
+            const role = getUserRole();
 
             if (books.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="8" class="text-center">No books found</td></tr>';
                 return;
             }
 
-            tbody.innerHTML = books.map(book => `
-                <tr>
-                    <td>${book.isbn}</td>
-                    <td><strong>${book.title}</strong></td>
-                    <td>${book.author}</td>
-                    <td>${book.category || 'N/A'}</td>
-                    <td>${book.totalCopies}</td>
-                    <td>${book.availableCopies}</td>
-                    <td>
-                        <span class="badge ${book.availableCopies > 0 ? 'badge-success' : 'badge-danger'}">
-                            ${book.availableCopies > 0 ? 'Available' : 'Out of Stock'}
-                        </span>
-                    </td>
-                    <td>
-                        <div class="action-buttons">
+            tbody.innerHTML = books.map(book => {
+                // Only show action buttons for librarians
+                const actions = role === 'LIBRARIAN' 
+                    ? `<div class="action-buttons">
                             <button class="icon-btn" onclick="editBook(${book.id})" title="Edit">✏️</button>
                             <button class="icon-btn" onclick="deleteBookById(${book.id})" title="Delete">🗑️</button>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
+                        </div>`
+                    : '<span style="color: #888;">View Only</span>';
+                
+                return `
+                    <tr>
+                        <td>${book.isbn}</td>
+                        <td><strong>${book.title}</strong></td>
+                        <td>${book.author}</td>
+                        <td>${book.category || 'N/A'}</td>
+                        <td>${book.totalCopies}</td>
+                        <td>${book.availableCopies}</td>
+                        <td>
+                            <span class="badge ${book.availableCopies > 0 ? 'badge-success' : 'badge-danger'}">
+                                ${book.availableCopies > 0 ? 'Available' : 'Out of Stock'}
+                            </span>
+                        </td>
+                        <td>
+                            ${actions}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         async function searchBooks() {
@@ -241,7 +279,7 @@
         }
 
         // Load books on page load
-        loadBooksData();
+        initPage();
 
         // Search on Enter key
         document.getElementById('searchInput').addEventListener('keypress', (e) => {

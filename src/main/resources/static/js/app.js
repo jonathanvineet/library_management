@@ -1,16 +1,66 @@
 // API Configuration
 const API_BASE_URL = 'http://localhost:8080/api';
 
+// Authentication functions
+function getAuthCredentials() {
+    return sessionStorage.getItem('authCredentials');
+}
+
+function getUserRole() {
+    return sessionStorage.getItem('userRole');
+}
+
+function getUsername() {
+    return sessionStorage.getItem('username');
+}
+
+function isLibrarian() {
+    return getUserRole() === 'LIBRARIAN';
+}
+
+function isMember() {
+    return getUserRole() === 'MEMBER';
+}
+
+function checkAuth() {
+    const credentials = getAuthCredentials();
+    if (!credentials) {
+        window.location.href = '/login.html';
+        return false;
+    }
+    return true;
+}
+
+function logout() {
+    sessionStorage.clear();
+    window.location.href = '/login.html';
+}
+
 // Utility Functions
 async function fetchAPI(endpoint, options = {}) {
     try {
+        const credentials = getAuthCredentials();
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers
+        };
+        
+        if (credentials) {
+            headers['Authorization'] = 'Basic ' + credentials;
+        }
+        
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers
-            },
+            headers,
             ...options
         });
+
+        if (response.status === 401 || response.status === 403) {
+            showNotification('Session expired or access denied. Please login again.', 'error');
+            setTimeout(() => {
+                logout();
+            }, 2000);
+            throw new Error('Unauthorized');
+        }
 
         if (!response.ok) {
             const error = await response.json().catch(() => ({ error: 'Request failed' }));
