@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,6 +18,11 @@
                 <li><a href="books.html" class="nav-link">Books</a></li>
                 <li><a href="members.html" class="nav-link active">Members</a></li>
                 <li><a href="transactions.html" class="nav-link">Transactions</a></li>
+                <li>
+                    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+                        <span id="themeIcon">🌙</span>
+                    </button>
+                </li>
                 <li class="user-info">
                     <span id="userDisplay"></span>
                     <button onclick="logout()" class="btn-logout">Logout</button>
@@ -30,14 +34,14 @@
     <!-- Main Content -->
     <div class="container">
         <div class="flex-between mb-2">
-            <h1>Member Management</h1>
+            <h1 style="font-size: 2.5rem; font-weight: 700;">Member Management</h1>
             <button class="btn btn-primary" onclick="openAddMemberModal()">➕ Register New Member</button>
         </div>
 
         <!-- Search Bar -->
         <div class="search-bar">
-            <input type="text" id="searchInput" class="search-input" placeholder="Search by name...">
-            <button class="btn btn-secondary" onclick="searchMembers()">🔍 Search</button>
+            <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search by name...">
+            <button class="btn btn-secondary" onclick="searchMembers()">Search</button>
             <button class="btn btn-outline" onclick="clearSearch()">Clear</button>
         </div>
 
@@ -50,15 +54,14 @@
                             <th>Name</th>
                             <th>Email</th>
                             <th>Phone</th>
-                            <th>Membership Date</th>
+                            <th>Address</th>
                             <th>Status</th>
-                            <th>Max Books</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="membersTableBody">
                         <tr>
-                            <td colspan="7" class="text-center">Loading...</td>
+                            <td colspan="6" class="text-center">Loading...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -71,48 +74,34 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="modalTitle">Register New Member</h2>
-                <button class="close-btn" onclick="closeModal('memberModal')">&times;</button>
+                <button class="close-modal" onclick="closeMemberModal()">✕</button>
             </div>
-            <form id="memberForm" onsubmit="handleMemberSubmit(event)">
+            <form id="memberForm">
                 <input type="hidden" id="memberId">
-
+                
                 <div class="form-group">
-                    <label for="name">Full Name *</label>
+                    <label for="name">Full Name</label>
                     <input type="text" id="name" required>
                 </div>
-
+                
                 <div class="form-group">
-                    <label for="email">Email *</label>
+                    <label for="email">Email</label>
                     <input type="email" id="email" required>
                 </div>
-
+                
                 <div class="form-group">
-                    <label for="phone">Phone *</label>
-                    <input type="tel" id="phone" pattern="[0-9]{10}" placeholder="10 digits" required>
+                    <label for="phone">Phone</label>
+                    <input type="tel" id="phone">
                 </div>
-
+                
                 <div class="form-group">
                     <label for="address">Address</label>
-                    <textarea id="address" rows="2"></textarea>
+                    <textarea id="address" rows="3"></textarea>
                 </div>
-
-                <div class="form-group">
-                    <label for="status">Status</label>
-                    <select id="status">
-                        <option value="ACTIVE">Active</option>
-                        <option value="INACTIVE">Inactive</option>
-                        <option value="SUSPENDED">Suspended</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="maxBooksAllowed">Max Books Allowed</label>
-                    <input type="number" id="maxBooksAllowed" min="1" max="20" value="5">
-                </div>
-
-                <div class="flex gap-1 mt-2">
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeMemberModal()">Cancel</button>
                     <button type="submit" class="btn btn-primary">Save Member</button>
-                    <button type="button" class="btn btn-outline" onclick="closeModal('memberModal')">Cancel</button>
                 </div>
             </form>
         </div>
@@ -120,43 +109,53 @@
 
     <script src="js/app.js"></script>
     <script>
-        let currentMembers = [];
+        let allMembers = [];
 
-        // Initialize page with authentication (librarian only)
-        function initPage() {
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            document.getElementById('themeIcon').textContent = newTheme === 'light' ? '🌙' : '☀️';
+        }
+
+        function initMembersPage() {
             if (!checkAuth()) return;
             
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            document.getElementById('themeIcon').textContent = savedTheme === 'light' ? '🌙' : '☀️';
+            
             const role = getUserRole();
-            
-            // Only librarians can access this page
-            if (role !== 'LIBRARIAN') {
-                showNotification('Access denied. Only librarians can manage members.', 'error');
-                setTimeout(() => {
-                    window.location.href = '/index.html';
-                }, 2000);
-                return;
-            }
-            
             const username = getUsername();
             const fullName = sessionStorage.getItem('fullName');
             
-            // Display user info
             document.getElementById('userDisplay').textContent = `${fullName || username} (${role})`;
             
-            // Load members data
-            loadMembersData();
+            if (role !== 'LIBRARIAN') {
+                window.location.href = '/index.html';
+                return;
+            }
+            
+            loadMembers();
         }
 
-        async function loadMembersData() {
-            currentMembers = await loadMembers();
-            displayMembers(currentMembers);
+        async function loadMembers() {
+            try {
+                allMembers = await fetchAPI('/api/members');
+                displayMembers(allMembers);
+            } catch (error) {
+                console.error('Error loading members:', error);
+                showNotification('Failed to load members', 'error');
+            }
         }
 
         function displayMembers(members) {
             const tbody = document.getElementById('membersTableBody');
-
+            
             if (members.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center">No members found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">No members found</td></tr>';
                 return;
             }
 
@@ -164,111 +163,104 @@
                 <tr>
                     <td><strong>${member.name}</strong></td>
                     <td>${member.email}</td>
-                    <td>${member.phone}</td>
-                    <td>${formatDate(member.membershipDate)}</td>
+                    <td>${member.phone || 'N/A'}</td>
+                    <td>${member.address || 'N/A'}</td>
+                    <td><span class="badge badge-${member.active ? 'success' : 'danger'}">${member.active ? 'Active' : 'Inactive'}</span></td>
                     <td>
-                        <span class="badge badge-${getStatusBadge(member.status)}">
-                            ${member.status}
-                        </span>
-                    </td>
-                    <td>${member.maxBooksAllowed}</td>
-                    <td>
-                        <div class="action-buttons">
-                            <button class="icon-btn" onclick="editMember(${member.id})" title="Edit">✏️</button>
-                            <button class="icon-btn" onclick="deleteMemberById(${member.id})" title="Delete">🗑️</button>
-                        </div>
+                        <button class="btn btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.875rem;" onclick="editMember(${member.id})">✏️ Edit</button>
+                        <button class="btn btn-${member.active ? 'warning' : 'success'}" style="padding: 0.375rem 0.75rem; font-size: 0.875rem;" onclick="toggleMemberStatus(${member.id}, ${member.active})">${member.active ? '🚫 Deactivate' : '✅ Activate'}</button>
                     </td>
                 </tr>
             `).join('');
         }
 
-        function getStatusBadge(status) {
-            const badges = {
-                'ACTIVE': 'success',
-                'INACTIVE': 'warning',
-                'SUSPENDED': 'danger'
-            };
-            return badges[status] || 'success';
-        }
-
-        async function searchMembers() {
-            const name = document.getElementById('searchInput').value;
-            currentMembers = await loadMembers(name);
-            displayMembers(currentMembers);
+        function searchMembers() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allMembers.filter(member => 
+                member.name.toLowerCase().includes(query)
+            );
+            displayMembers(filtered);
         }
 
         function clearSearch() {
             document.getElementById('searchInput').value = '';
-            loadMembersData();
+            displayMembers(allMembers);
         }
 
         function openAddMemberModal() {
             document.getElementById('modalTitle').textContent = 'Register New Member';
             document.getElementById('memberForm').reset();
             document.getElementById('memberId').value = '';
-            document.getElementById('status').value = 'ACTIVE';
-            document.getElementById('maxBooksAllowed').value = '5';
-            openModal('memberModal');
+            document.getElementById('memberModal').classList.add('active');
+        }
+
+        function closeMemberModal() {
+            document.getElementById('memberModal').classList.remove('active');
         }
 
         async function editMember(id) {
-            const member = currentMembers.find(m => m.id === id);
-            if (!member) return;
-
-            document.getElementById('modalTitle').textContent = 'Edit Member';
-            document.getElementById('memberId').value = member.id;
-            document.getElementById('name').value = member.name;
-            document.getElementById('email').value = member.email;
-            document.getElementById('phone').value = member.phone;
-            document.getElementById('address').value = member.address || '';
-            document.getElementById('status').value = member.status;
-            document.getElementById('maxBooksAllowed').value = member.maxBooksAllowed;
-
-            openModal('memberModal');
+            try {
+                const member = await fetchAPI(`/api/members/${id}`);
+                document.getElementById('modalTitle').textContent = 'Edit Member';
+                document.getElementById('memberId').value = member.id;
+                document.getElementById('name').value = member.name;
+                document.getElementById('email').value = member.email;
+                document.getElementById('phone').value = member.phone || '';
+                document.getElementById('address').value = member.address || '';
+                document.getElementById('memberModal').classList.add('active');
+            } catch (error) {
+                showNotification('Failed to load member details', 'error');
+            }
         }
 
-        async function handleMemberSubmit(event) {
-            event.preventDefault();
+        async function toggleMemberStatus(id, currentStatus) {
+            const action = currentStatus ? 'deactivate' : 'activate';
+            if (!confirm(`Are you sure you want to ${action} this member?`)) return;
+            
+            try {
+                await fetchAPI(`/api/members/${id}/${action}`, { method: 'PUT' });
+                showNotification(`Member ${action}d successfully`, 'success');
+                loadMembers();
+            } catch (error) {
+                showNotification(error.message || `Failed to ${action} member`, 'error');
+            }
+        }
 
+        document.getElementById('memberForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const id = document.getElementById('memberId').value;
             const memberData = {
                 name: document.getElementById('name').value,
                 email: document.getElementById('email').value,
                 phone: document.getElementById('phone').value,
-                address: document.getElementById('address').value || null,
-                status: document.getElementById('status').value,
-                maxBooksAllowed: parseInt(document.getElementById('maxBooksAllowed').value)
+                address: document.getElementById('address').value,
+                active: true
             };
-
-            const memberId = document.getElementById('memberId').value;
-
+            
             try {
-                if (memberId) {
-                    await updateMember(memberId, memberData);
+                if (id) {
+                    await fetchAPI(`/api/members/${id}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(memberData)
+                    });
+                    showNotification('Member updated successfully', 'success');
                 } else {
-                    await createMember(memberData);
+                    await fetchAPI('/api/members', {
+                        method: 'POST',
+                        body: JSON.stringify(memberData)
+                    });
+                    showNotification('Member registered successfully', 'success');
                 }
-                closeModal('memberModal');
-                loadMembersData();
+                
+                closeMemberModal();
+                loadMembers();
             } catch (error) {
-                console.error('Error saving member:', error);
+                showNotification(error.message || 'Failed to save member', 'error');
             }
-        }
-
-        async function deleteMemberById(id) {
-            const success = await deleteMember(id);
-            if (success) {
-                loadMembersData();
-            }
-        }
-
-        // Initialize page on load
-        initPage();
-
-        // Search on Enter key
-        document.getElementById('searchInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') searchMembers();
         });
+
+        initMembersPage();
     </script>
 </body>
-
 </html>

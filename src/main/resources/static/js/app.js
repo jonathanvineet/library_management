@@ -84,18 +84,6 @@ function showNotification(message, type = 'success') {
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
     notification.textContent = message;
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 1rem 1.5rem;
-        background: ${type === 'success' ? 'var(--success-gradient)' : 'var(--secondary-gradient)'};
-        color: white;
-        border-radius: var(--radius-md);
-        box-shadow: var(--glass-shadow);
-        z-index: 3000;
-        animation: slideIn 0.3s ease;
-    `;
 
     document.body.appendChild(notification);
 

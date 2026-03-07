@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,6 +18,11 @@
                 <li><a href="books.html" class="nav-link active">Books</a></li>
                 <li><a href="members.html" class="nav-link" id="membersNav">Members</a></li>
                 <li><a href="transactions.html" class="nav-link">Transactions</a></li>
+                <li>
+                    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+                        <span id="themeIcon">🌙</span>
+                    </button>
+                </li>
                 <li class="user-info">
                     <span id="userDisplay"></span>
                     <button onclick="logout()" class="btn-logout">Logout</button>
@@ -30,14 +34,14 @@
     <!-- Main Content -->
     <div class="container">
         <div class="flex-between mb-2">
-            <h1>Book Management</h1>
+            <h1 style="font-size: 2.5rem; font-weight: 700;">Book Management</h1>
             <button class="btn btn-primary" onclick="openAddBookModal()" id="addBookBtn">➕ Add New Book</button>
         </div>
 
         <!-- Search Bar -->
         <div class="search-bar">
-            <input type="text" id="searchInput" class="search-input" placeholder="Search by title, author, or ISBN...">
-            <button class="btn btn-secondary" onclick="searchBooks()">🔍 Search</button>
+            <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search by title, author, or ISBN...">
+            <button class="btn btn-secondary" onclick="searchBooks()">Search</button>
             <button class="btn btn-outline" onclick="clearSearch()">Clear</button>
         </div>
 
@@ -53,13 +57,12 @@
                             <th>Category</th>
                             <th>Total Copies</th>
                             <th>Available</th>
-                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="booksTableBody">
                         <tr>
-                            <td colspan="8" class="text-center">Loading...</td>
+                            <td colspan="7" class="text-center">Loading...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -72,59 +75,44 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="modalTitle">Add New Book</h2>
-                <button class="close-btn" onclick="closeModal('bookModal')">&times;</button>
+                <button class="close-modal" onclick="closeBookModal()">✕</button>
             </div>
-            <form id="bookForm" onsubmit="handleBookSubmit(event)">
+            <form id="bookForm">
                 <input type="hidden" id="bookId">
-
+                
                 <div class="form-group">
-                    <label for="isbn">ISBN *</label>
+                    <label for="isbn">ISBN</label>
                     <input type="text" id="isbn" required>
                 </div>
-
+                
                 <div class="form-group">
-                    <label for="title">Title *</label>
+                    <label for="title">Title</label>
                     <input type="text" id="title" required>
                 </div>
-
+                
                 <div class="form-group">
-                    <label for="author">Author *</label>
+                    <label for="author">Author</label>
                     <input type="text" id="author" required>
                 </div>
-
+                
                 <div class="form-group">
                     <label for="publisher">Publisher</label>
                     <input type="text" id="publisher">
                 </div>
-
-                <div class="form-group">
-                    <label for="publicationYear">Publication Year</label>
-                    <input type="number" id="publicationYear" min="1000" max="2100">
-                </div>
-
+                
                 <div class="form-group">
                     <label for="category">Category</label>
-                    <input type="text" id="category" placeholder="e.g., Fiction, Science, History">
+                    <input type="text" id="category">
                 </div>
-
+                
                 <div class="form-group">
-                    <label for="totalCopies">Total Copies *</label>
+                    <label for="totalCopies">Total Copies</label>
                     <input type="number" id="totalCopies" min="1" required>
                 </div>
-
-                <div class="form-group">
-                    <label for="availableCopies">Available Copies *</label>
-                    <input type="number" id="availableCopies" min="0" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="description">Description</label>
-                    <textarea id="description" rows="3"></textarea>
-                </div>
-
-                <div class="flex gap-1 mt-2">
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeBookModal()">Cancel</button>
                     <button type="submit" class="btn btn-primary">Save Book</button>
-                    <button type="button" class="btn btn-outline" onclick="closeModal('bookModal')">Cancel</button>
                 </div>
             </form>
         </div>
@@ -132,160 +120,179 @@
 
     <script src="js/app.js"></script>
     <script>
-        let currentBooks = [];
+        let allBooks = [];
 
-        // Check authentication and initialize page
-        function initPage() {
+        // Theme Management
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+        }
+
+        function updateThemeIcon(theme) {
+            const icon = document.getElementById('themeIcon');
+            icon.textContent = theme === 'light' ? '🌙' : '☀️';
+        }
+
+        function loadSavedTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeIcon(savedTheme);
+        }
+
+        function initBooksPage() {
             if (!checkAuth()) return;
+            
+            loadSavedTheme();
             
             const role = getUserRole();
             const username = getUsername();
             const fullName = sessionStorage.getItem('fullName');
             
-            // Display user info
             document.getElementById('userDisplay').textContent = `${fullName || username} (${role})`;
             
-            // Hide elements based on role
-            if (role === 'MEMBER') {
-                // Members cannot add/edit/delete books
-                const addBookBtn = document.getElementById('addBookBtn');
-                if (addBookBtn) addBookBtn.style.display = 'none';
-                
-                // Hide members nav
-                const membersNav = document.getElementById('membersNav');
-                if (membersNav) membersNav.style.display = 'none';
+            if (role !== 'LIBRARIAN') {
+                document.getElementById('membersNav').style.display = 'none';
+                document.getElementById('addBookBtn').style.display = 'none';
             }
             
-            // Load books data
-            loadBooksData();
+            loadBooks();
         }
 
-        async function loadBooksData() {
-            currentBooks = await loadBooks();
-            displayBooks(currentBooks);
+        async function loadBooks() {
+            try {
+                allBooks = await fetchAPI('/api/books');
+                displayBooks(allBooks);
+            } catch (error) {
+                console.error('Error loading books:', error);
+                showNotification('Failed to load books', 'error');
+            }
         }
 
         function displayBooks(books) {
             const tbody = document.getElementById('booksTableBody');
             const role = getUserRole();
-
+            
             if (books.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center">No books found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">No books found</td></tr>';
                 return;
             }
 
-            tbody.innerHTML = books.map(book => {
-                // Only show action buttons for librarians
-                const actions = role === 'LIBRARIAN' 
-                    ? `<div class="action-buttons">
-                            <button class="icon-btn" onclick="editBook(${book.id})" title="Edit">✏️</button>
-                            <button class="icon-btn" onclick="deleteBookById(${book.id})" title="Delete">🗑️</button>
-                        </div>`
-                    : '<span style="color: #888;">View Only</span>';
-                
-                return `
-                    <tr>
-                        <td>${book.isbn}</td>
-                        <td><strong>${book.title}</strong></td>
-                        <td>${book.author}</td>
-                        <td>${book.category || 'N/A'}</td>
-                        <td>${book.totalCopies}</td>
-                        <td>${book.availableCopies}</td>
-                        <td>
-                            <span class="badge ${book.availableCopies > 0 ? 'badge-success' : 'badge-danger'}">
-                                ${book.availableCopies > 0 ? 'Available' : 'Out of Stock'}
-                            </span>
-                        </td>
-                        <td>
-                            ${actions}
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+            tbody.innerHTML = books.map(book => `
+                <tr>
+                    <td>${book.isbn}</td>
+                    <td><strong>${book.title}</strong></td>
+                    <td>${book.author}</td>
+                    <td><span class="badge badge-info">${book.category || 'N/A'}</span></td>
+                    <td>${book.totalCopies}</td>
+                    <td><span class="badge badge-${book.availableCopies > 0 ? 'success' : 'danger'}">${book.availableCopies}</span></td>
+                    <td>
+                        ${role === 'LIBRARIAN' ? `
+                            <button class="btn btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.875rem;" onclick="editBook(${book.id})">✏️ Edit</button>
+                            <button class="btn btn-danger" style="padding: 0.375rem 0.75rem; font-size: 0.875rem;" onclick="deleteBook(${book.id})">🗑️ Delete</button>
+                        ` : `
+                            <span class="badge badge-info">View Only</span>
+                        `}
+                    </td>
+                </tr>
+            `).join('');
         }
 
-        async function searchBooks() {
-            const keyword = document.getElementById('searchInput').value;
-            currentBooks = await loadBooks(keyword);
-            displayBooks(currentBooks);
+        function searchBooks() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allBooks.filter(book => 
+                book.title.toLowerCase().includes(query) ||
+                book.author.toLowerCase().includes(query) ||
+                book.isbn.toLowerCase().includes(query)
+            );
+            displayBooks(filtered);
         }
 
         function clearSearch() {
             document.getElementById('searchInput').value = '';
-            loadBooksData();
+            displayBooks(allBooks);
         }
 
         function openAddBookModal() {
             document.getElementById('modalTitle').textContent = 'Add New Book';
             document.getElementById('bookForm').reset();
             document.getElementById('bookId').value = '';
-            openModal('bookModal');
+            document.getElementById('bookModal').classList.add('active');
+        }
+
+        function closeBookModal() {
+            document.getElementById('bookModal').classList.remove('active');
         }
 
         async function editBook(id) {
-            const book = currentBooks.find(b => b.id === id);
-            if (!book) return;
-
-            document.getElementById('modalTitle').textContent = 'Edit Book';
-            document.getElementById('bookId').value = book.id;
-            document.getElementById('isbn').value = book.isbn;
-            document.getElementById('title').value = book.title;
-            document.getElementById('author').value = book.author;
-            document.getElementById('publisher').value = book.publisher || '';
-            document.getElementById('publicationYear').value = book.publicationYear || '';
-            document.getElementById('category').value = book.category || '';
-            document.getElementById('totalCopies').value = book.totalCopies;
-            document.getElementById('availableCopies').value = book.availableCopies;
-            document.getElementById('description').value = book.description || '';
-
-            openModal('bookModal');
+            try {
+                const book = await fetchAPI(`/api/books/${id}`);
+                document.getElementById('modalTitle').textContent = 'Edit Book';
+                document.getElementById('bookId').value = book.id;
+                document.getElementById('isbn').value = book.isbn;
+                document.getElementById('title').value = book.title;
+                document.getElementById('author').value = book.author;
+                document.getElementById('publisher').value = book.publisher || '';
+                document.getElementById('category').value = book.category || '';
+                document.getElementById('totalCopies').value = book.totalCopies;
+                document.getElementById('bookModal').classList.add('active');
+            } catch (error) {
+                showNotification('Failed to load book details', 'error');
+            }
         }
 
-        async function handleBookSubmit(event) {
-            event.preventDefault();
+        async function deleteBook(id) {
+            if (!confirm('Are you sure you want to delete this book?')) return;
+            
+            try {
+                await fetchAPI(`/api/books/${id}`, { method: 'DELETE' });
+                showNotification('Book deleted successfully', 'success');
+                loadBooks();
+            } catch (error) {
+                showNotification(error.message || 'Failed to delete book', 'error');
+            }
+        }
 
+        document.getElementById('bookForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const id = document.getElementById('bookId').value;
             const bookData = {
                 isbn: document.getElementById('isbn').value,
                 title: document.getElementById('title').value,
                 author: document.getElementById('author').value,
-                publisher: document.getElementById('publisher').value || null,
-                publicationYear: parseInt(document.getElementById('publicationYear').value) || null,
-                category: document.getElementById('category').value || null,
+                publisher: document.getElementById('publisher').value,
+                category: document.getElementById('category').value,
                 totalCopies: parseInt(document.getElementById('totalCopies').value),
-                availableCopies: parseInt(document.getElementById('availableCopies').value),
-                description: document.getElementById('description').value || null
+                availableCopies: parseInt(document.getElementById('totalCopies').value)
             };
-
-            const bookId = document.getElementById('bookId').value;
-
+            
             try {
-                if (bookId) {
-                    await updateBook(bookId, bookData);
+                if (id) {
+                    await fetchAPI(`/api/books/${id}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(bookData)
+                    });
+                    showNotification('Book updated successfully', 'success');
                 } else {
-                    await createBook(bookData);
+                    await fetchAPI('/api/books', {
+                        method: 'POST',
+                        body: JSON.stringify(bookData)
+                    });
+                    showNotification('Book added successfully', 'success');
                 }
-                closeModal('bookModal');
-                loadBooksData();
+                
+                closeBookModal();
+                loadBooks();
             } catch (error) {
-                console.error('Error saving book:', error);
+                showNotification(error.message || 'Failed to save book', 'error');
             }
-        }
-
-        async function deleteBookById(id) {
-            const success = await deleteBook(id);
-            if (success) {
-                loadBooksData();
-            }
-        }
-
-        // Load books on page load
-        initPage();
-
-        // Search on Enter key
-        document.getElementById('searchInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') searchBooks();
         });
+
+        initBooksPage();
     </script>
 </body>
-
 </html>
