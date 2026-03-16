@@ -56,25 +56,25 @@ public class SecurityConfig {
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/register").permitAll()
-                        
+
+                        // Users endpoints - Only Librarians can manage users (except registration)
+                        .requestMatchers("/api/users/**").hasRole("LIBRARIAN")
+
                         // Books endpoints - Members can read, only Librarians can modify
                         .requestMatchers(HttpMethod.GET, "/api/books/**").hasAnyRole("LIBRARIAN", "MEMBER")
                         .requestMatchers(HttpMethod.POST, "/api/books/**").hasRole("LIBRARIAN")
                         .requestMatchers(HttpMethod.PUT, "/api/books/**").hasRole("LIBRARIAN")
                         .requestMatchers(HttpMethod.DELETE, "/api/books/**").hasRole("LIBRARIAN")
-                        
+
                         // Members endpoints - Only Librarians can manage
                         .requestMatchers("/api/members/**").hasRole("LIBRARIAN")
-                        
+
                         // Transactions endpoints - Members can view their own, Librarians can manage all
                         .requestMatchers(HttpMethod.GET, "/api/transactions/**").hasAnyRole("LIBRARIAN", "MEMBER")
                         .requestMatchers(HttpMethod.POST, "/api/transactions/**").hasRole("LIBRARIAN")
                         .requestMatchers(HttpMethod.PUT, "/api/transactions/**").hasRole("LIBRARIAN")
                         .requestMatchers(HttpMethod.DELETE, "/api/transactions/**").hasRole("LIBRARIAN")
-                        
-                        // Users endpoints - Only Librarians can manage users
-                        .requestMatchers("/api/users/**").hasRole("LIBRARIAN")
-                        
+
                         // All other requests require authentication
                         .anyRequest().authenticated()
                 )
@@ -90,11 +90,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("*"));
+        configuration.setAllowedOriginPatterns(List.of("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(false);
-        
+        configuration.setAllowCredentials(true);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
