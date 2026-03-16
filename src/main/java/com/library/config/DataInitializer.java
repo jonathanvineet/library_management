@@ -1,12 +1,16 @@
 package com.library.config;
 
-import com.library.model.User;
-import com.library.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+
+import com.library.model.Member;
+import com.library.model.User;
+import com.library.repository.MemberRepository;
+import com.library.repository.UserRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
 @RequiredArgsConstructor
@@ -14,6 +18,7 @@ import org.springframework.stereotype.Component;
 public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
+    private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -47,6 +52,27 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Default users initialized successfully!");
         } else {
             log.info("Users already exist in database, skipping initialization");
+        }
+
+        // Check if members already exist
+        if (memberRepository.count() == 0) {
+            log.info("Initializing default members...");
+
+            // Create default Member record
+            Member defaultMember = new Member();
+            defaultMember.setName("Default Member");
+            defaultMember.setEmail("member@library.com");
+            defaultMember.setPhone("1234567890");
+            defaultMember.setAddress("Default Address");
+            defaultMember.setMembershipDate(java.time.LocalDate.now());
+            defaultMember.setStatus(Member.MemberStatus.ACTIVE);
+            defaultMember.setMaxBooksAllowed(5);
+            memberRepository.save(defaultMember);
+            log.info("Created default member record");
+
+            log.info("Default members initialized successfully!");
+        } else {
+            log.info("Members already exist in database, skipping initialization");
         }
     }
 }

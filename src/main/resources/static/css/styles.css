@@ -969,3 +969,80 @@ textarea::placeholder {
         min-width: 600px;
     }
 }
+
+/* ============================================
+   BOOK CARDS FOR DASHBOARD
+   ============================================ */
+
+.books-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+.book-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-normal);
+    cursor: pointer;
+}
+
+.book-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-300);
+}
+
+.book-cover {
+    text-align: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.book-icon {
+    font-size: 3rem;
+    opacity: 0.7;
+}
+
+.book-info h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.book-author {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-bottom: var(--spacing-xs);
+}
+
+.book-genre {
+    color: var(--text-muted);
+    font-size: 0.813rem;
+    margin-bottom: var(--spacing-sm);
+}
+
+.book-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+.available-copies {
+    font-size: 0.813rem;
+    color: var(--text-secondary);
+}
+
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.813rem;
+    border-radius: var(--radius-sm);
+}

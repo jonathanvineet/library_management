@@ -241,7 +241,8 @@
             if (!confirm('Are you sure you want to mark this book as returned?')) return;
             
             try {
-                await fetchAPI(`/api/transactions/${transactionId}/return`, { method: 'PUT' });
+                // Backend expects POST for returning books
+                await fetchAPI(`/api/transactions/${transactionId}/return`, { method: 'POST' });
                 showNotification('Book returned successfully', 'success');
                 loadTransactions();
             } catch (error) {
@@ -252,14 +253,25 @@
         document.getElementById('borrowForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            const memberId = parseInt(document.getElementById('memberId').value);
+            const bookId = parseInt(document.getElementById('bookId').value);
+            const dueDateValue = document.getElementById('dueDate').value;
+
+            // Calculate loan days based on selected due date.
+            // Backend expects 'loanDays' field.
+            const today = new Date();
+            const dueDate = new Date(dueDateValue);
+            const msPerDay = 1000 * 60 * 60 * 24;
+            const loanDays = Math.max(1, Math.ceil((dueDate - today) / msPerDay));
+
             const transactionData = {
-                memberId: parseInt(document.getElementById('memberId').value),
-                bookId: parseInt(document.getElementById('bookId').value),
-                dueDate: document.getElementById('dueDate').value
+                memberId,
+                bookId,
+                loanDays
             };
             
             try {
-                await fetchAPI('/api/transactions', {
+                await fetchAPI('/api/transactions/borrow', {
                     method: 'POST',
                     body: JSON.stringify(transactionData)
                 });

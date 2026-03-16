@@ -1,14 +1,26 @@
 package com.library.controller;
 
-import com.library.model.Transaction;
-import com.library.service.TransactionService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.library.model.Transaction;
+import com.library.model.User;
+import com.library.service.TransactionService;
+import com.library.service.UserService;
+
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/transactions")
@@ -17,6 +29,7 @@ import java.util.Map;
 public class TransactionController {
 
     private final TransactionService transactionService;
+    private final UserService userService;
 
     @GetMapping
     public ResponseEntity<List<Transaction>> getAllTransactions() {
@@ -48,6 +61,20 @@ public class TransactionController {
     @GetMapping("/active")
     public ResponseEntity<List<Transaction>> getActiveTransactions() {
         return ResponseEntity.ok(transactionService.getActiveTransactions());
+    }
+
+    @GetMapping("/my-transactions")
+    public ResponseEntity<List<Transaction>> getMyTransactions() {
+        User currentUser = userService.getCurrentUser();
+        if (currentUser.getRole() == User.UserRole.MEMBER) {
+            // For members, find their member record by email and get transactions
+            return transactionService.getTransactionsByMemberEmail(currentUser.getEmail())
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.ok(Collections.emptyList()));
+        } else {
+            // For librarians, return all transactions
+            return ResponseEntity.ok(transactionService.getAllTransactions());
+        }
     }
 
     @PostMapping("/borrow")

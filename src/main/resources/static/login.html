@@ -117,7 +117,12 @@
                 
                 if (response.ok) {
                     sessionStorage.setItem('authCredentials', credentials);
-                    sessionStorage.setItem('userRole', data.role);
+
+                    // Normalize role (strip Spring Security prefix if present)
+                    const rawRole = String(data.role || '').toUpperCase();
+                    const normalizedRole = rawRole.startsWith('ROLE_') ? rawRole.substring(5) : rawRole;
+                    sessionStorage.setItem('userRole', normalizedRole);
+
                     sessionStorage.setItem('username', data.username);
                     sessionStorage.setItem('fullName', data.fullName);
                     
@@ -125,9 +130,11 @@
                     alertBox.textContent = '✅ Login successful! Redirecting...';
                     alertBox.style.display = 'block';
                     
+                    // Redirect based on normalized role
+                    const dashboardUrl = normalizedRole === 'LIBRARIAN' ? '/admin-dashboard.html' : '/student-dashboard.html';
                     setTimeout(() => {
-                        window.location.href = '/index.html';
-                    }, 1000);
+                        window.location.href = dashboardUrl;
+                    }, 1001);
                 } else {
                     alertBox.className = 'alert alert-error';
                     alertBox.textContent = '❌ ' + (data.error || 'Login failed. Please check your credentials.');

@@ -1,16 +1,18 @@
 package com.library.service;
 
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.library.model.Book;
 import com.library.model.Member;
 import com.library.model.Transaction;
 import com.library.repository.TransactionRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +37,14 @@ public class TransactionService {
 
     public List<Transaction> getTransactionsByBook(Long bookId) {
         return transactionRepository.findByBookId(bookId);
+    }
+
+    public Optional<List<Transaction>> getTransactionsByMemberEmail(String email) {
+        Optional<Member> member = memberService.getMemberByEmail(email);
+        if (member.isPresent()) {
+            return Optional.of(transactionRepository.findByMemberId(member.get().getId()));
+        }
+        return Optional.empty();
     }
 
     public List<Transaction> getOverdueTransactions() {
