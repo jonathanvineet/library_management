@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/users")
@@ -65,7 +66,7 @@ public class UserController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('LIBRARIAN')")
-    public ResponseEntity<?> updateUser(@PathVariable Long id, @Valid @RequestBody User user) {
+    public ResponseEntity<?> updateUser(@PathVariable UUID id, @Valid @RequestBody User user) {
         try {
             User updatedUser = userService.updateUser(id, user);
             // Remove password from response
@@ -78,7 +79,7 @@ public class UserController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('LIBRARIAN')")
-    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<?> deleteUser(@PathVariable UUID id) {
         try {
             userService.deleteUser(id);
             return ResponseEntity.noContent().build();

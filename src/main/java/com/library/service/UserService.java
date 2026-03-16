@@ -14,10 +14,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+<<<<<<< HEAD
 import com.library.model.User;
 import com.library.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
+=======
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+>>>>>>> d0509944689a22564d8af344923d6ecc7d11abbb
 
 @Service
 @RequiredArgsConstructor
@@ -66,7 +73,7 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public User updateUser(Long id, User userDetails) {
+    public User updateUser(UUID id, User userDetails) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
 
@@ -93,7 +100,7 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public void deleteUser(Long id) {
+    public void deleteUser(UUID id) {
         if (!userRepository.existsById(id)) {
             throw new RuntimeException("User not found with id: " + id);
         }
