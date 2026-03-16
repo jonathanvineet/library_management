@@ -1,5 +1,7 @@
 // API Configuration
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost'
+    ? (window.location.port === '5500' ? 'http://localhost:8080/api' : '/api')
+    : '/api';
 
 // Authentication functions
 function getAuthCredentials() {

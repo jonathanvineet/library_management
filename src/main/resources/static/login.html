@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <div class="auth-container">
@@ -91,15 +91,20 @@
         // Login Form Handler
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const alertBox = document.getElementById('alert');
-            
+
+            // Determine API base URL
+            const apiBaseUrl = window.location.port === '5500'
+                ? 'http://localhost:8080/api'
+                : '/api';
+
             try {
                 const credentials = btoa(username + ':' + password);
-                
-                const response = await fetch('/api/auth/login', {
+
+                const response = await fetch(`${apiBaseUrl}/auth/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
