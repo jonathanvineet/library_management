@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <div class="auth-container">
@@ -77,6 +77,20 @@
     </div>
 
     <script>
+        // Keep registration on Spring Boot origin so API calls are same-origin.
+        if (window.location.port === '5500') {
+            window.location.replace('http://localhost:8080/register.html');
+        }
+
+        // Defensive cleanup: remove stale service workers that can break fetch in local dev.
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then((registrations) => {
+                registrations.forEach((registration) => registration.unregister());
+            }).catch(() => {
+                // Ignore cleanup errors; registration should still work without this.
+            });
+        }
+
         // Theme Toggle Functionality
         function toggleTheme() {
             const html = document.documentElement;
@@ -102,7 +116,7 @@
         // Register Form Handler
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const formData = {
                 username: document.getElementById('username').value,
                 password: document.getElementById('password').value,
@@ -110,11 +124,11 @@
                 email: document.getElementById('email').value,
                 role: document.getElementById('role').value
             };
-            
+
             const alertBox = document.getElementById('alert');
-            
+
             try {
-                const response = await fetch('/api/auth/register', {
+                const response = await fetch('/api/users/register', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -122,7 +136,13 @@
                     body: JSON.stringify(formData)
                 });
                 
-                const data = await response.json();
+                const responseText = await response.text();
+                let data = null;
+                try {
+                    data = responseText ? JSON.parse(responseText) : null;
+                } catch (parseError) {
+                    data = { error: responseText };
+                }
                 
                 if (response.ok) {
                     alertBox.className = 'alert alert-success';
@@ -139,7 +159,7 @@
                 }
             } catch (error) {
                 alertBox.className = 'alert alert-error';
-                alertBox.textContent = '❌ An error occurred. Please try again.';
+                alertBox.textContent = '❌ Cannot reach backend. Open http://localhost:8080/register.html and ensure Spring Boot is running.';
                 alertBox.style.display = 'block';
             }
         });
