@@ -47,7 +47,7 @@ public class Member {
     private MemberStatus status = MemberStatus.ACTIVE;
 
     @Column(name = "max_books_allowed")
-    private Integer maxBooksAllowed = 5;
+    private Integer maxBooksAllowed = 3;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
