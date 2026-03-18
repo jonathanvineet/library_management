@@ -32,9 +32,7 @@ public class MemberController {
 
     @GetMapping("/email/{email}")
     public ResponseEntity<Member> getMemberByEmail(@PathVariable String email) {
-        return memberService.getMemberByEmail(email)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(memberService.getOrCreateMemberByEmail(email));
     }
 
     @GetMapping("/search")

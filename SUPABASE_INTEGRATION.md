@@ -11,9 +11,9 @@ This application now supports Supabase as the production database. You can use e
 ### 1. Get Your Supabase Credentials
 
 1. Go to your Supabase Dashboard: https://app.supabase.com
-2. Select your project: `hnpgjwbhndackrowriqau`
+2. Select your project: `hnpgjwbhndackowriqau`
 3. Navigate to **Project Settings > API**
-   - Copy the **Project URL**: `https://hnpgjwbhndackrowriqau.supabase.co`
+    - Copy the **Project URL**: `https://hnpgjwbhndackowriqau.supabase.co`
    - Copy the **anon public key** (you already have this)
 4. Navigate to **Project Settings > Database > Connection Pooling**
    - Copy your database password
@@ -25,7 +25,7 @@ Edit your `.env` file with your actual database password:
 
 ```env
 # The URL and anon key are already set correctly
-SUPABASE_URL=https://hnpgjwbhndackrowriqau.supabase.co
+SUPABASE_URL=https://hnpgjwbhndackowriqau.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 # Update this with your actual database password
@@ -129,7 +129,7 @@ spring.jpa.hibernate.ddl-auto=validate
 ### 1. Test with curl:
 ```bash
 curl --request GET \
-  --url 'https://hnpgjwbhndackrowriqau.supabase.co/rest/v1/books' \
+    --url 'https://hnpgjwbhndackowriqau.supabase.co/rest/v1/books' \
   --header 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' \
   --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
 ```
@@ -178,4 +178,8 @@ HikariPool-1 - Start completed.
 
 - [Supabase Documentation](https://supabase.com/docs)
 - [Spring Data JPA Documentation](https://spring.io/projects/spring-data-jpa)
-- [Your Supabase Dashboard](https://app.supabase.com/project/hnpgjwbhndackrowriqau)
+- [Your Supabase Dashboard](https://app.supabase.com/project/hnpgjwbhndackowriqau)
+
+## Important Note About MCP
+
+The MCP server config gives Copilot tools access to your Supabase project metadata; it does not configure this Spring Boot app database automatically. This app still needs `SPRING_PROFILES_ACTIVE=prod` plus valid `SUPABASE_DB_URL` (or host/port/user/password values) in environment variables.

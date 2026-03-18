@@ -27,38 +27,64 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+        String login = loginRequest.getUsername() == null ? null : loginRequest.getUsername().trim();
+        String password = loginRequest.getPassword();
+
         try {
-            if (userService.isConfiguredLibrarianCredential(loginRequest.getUsername(), loginRequest.getPassword())) {
+            if (userService.isConfiguredLibrarianCredential(login, password)) {
                 userService.ensureConfiguredLibrarianAccount();
+            }
+            if (userService.isConfiguredDevCredential(login, password)) {
+                userService.ensureConfiguredDevMemberAccount();
             }
 
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            loginRequest.getUsername(),
-                            loginRequest.getPassword()
+                            login,
+                            password
                     )
             );
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-            
-            User user = userService.findByUsername(userDetails.getUsername())
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "Login successful");
-            response.put("userId", user.getId());
-            response.put("username", user.getUsername());
-            response.put("fullName", user.getFullName());
-            response.put("role", user.getRole());
-            response.put("email", user.getEmail());
-
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(buildLoginSuccessResponse(authentication));
         } catch (AuthenticationException e) {
+            // If legacy plain-text passwords exist, migrate once and retry login.
+            if (userService.upgradeLegacyPasswordIfNeeded(login, password)) {
+                try {
+                    Authentication retriedAuthentication = authenticationManager.authenticate(
+                            new UsernamePasswordAuthenticationToken(login, password)
+                    );
+                    SecurityContextHolder.getContext().setAuthentication(retriedAuthentication);
+                    return ResponseEntity.ok(buildLoginSuccessResponse(retriedAuthentication));
+                } catch (AuthenticationException ignored) {
+                    // Fall through to the standard unauthorized response.
+                }
+            }
+
             Map<String, String> error = new HashMap<>();
             error.put("error", "Invalid username or password");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Authentication service unavailable. Check database/Supabase connectivity.");
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(error);
         }
+    }
+
+    private Map<String, Object> buildLoginSuccessResponse(Authentication authentication) {
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+
+        User user = userService.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Login successful");
+        response.put("userId", user.getId());
+        response.put("username", user.getUsername());
+        response.put("fullName", user.getFullName());
+        response.put("role", user.getRole());
+        response.put("email", user.getEmail());
+        return response;
     }
 
     @GetMapping("/current-user")

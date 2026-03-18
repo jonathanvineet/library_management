@@ -28,6 +28,11 @@ public class MemberService {
         return memberRepository.findByEmail(email);
     }
 
+    public Member getOrCreateMemberByEmail(String email) {
+        return memberRepository.findByEmail(email)
+                .orElseGet(() -> createDefaultMemberProfile(email));
+    }
+
     public List<Member> searchMembers(String name) {
         if (name == null || name.trim().isEmpty()) {
             return getAllMembers();
@@ -81,6 +86,22 @@ public class MemberService {
         Member member = memberRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Member not found with id: " + id));
         member.setStatus(status);
+        return memberRepository.save(member);
+    }
+
+    private Member createDefaultMemberProfile(String email) {
+        Member member = new Member();
+        String displayName = (email == null || email.isBlank())
+                ? "Member"
+                : email.split("@")[0];
+
+        member.setName(displayName);
+        member.setEmail(email);
+        member.setPhone("9999999999");
+        member.setAddress("N/A");
+        member.setMembershipDate(java.time.LocalDate.now());
+        member.setStatus(Member.MemberStatus.ACTIVE);
+        member.setMaxBooksAllowed(3);
         return memberRepository.save(member);
     }
 }

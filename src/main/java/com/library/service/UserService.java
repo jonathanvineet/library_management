@@ -27,6 +27,8 @@ public class UserService implements UserDetailsService {
 
     private static final String LIBRARIAN_EMAIL = "yuvan.r2005@gmail.com";
     private static final String LIBRARIAN_PASSWORD = "admin@12345";
+    private static final String DEV_USERNAME = "dev";
+    private static final String DEV_PASSWORD = "dev123";
 
     private final UserRepository userRepository;
     private final MemberRepository memberRepository;
@@ -52,12 +54,47 @@ public class UserService implements UserDetailsService {
         return userRepository.findByUsername(username);
     }
 
+    @Transactional
+    public boolean upgradeLegacyPasswordIfNeeded(String login, String rawPassword) {
+        if (login == null || rawPassword == null) {
+            return false;
+        }
+
+        Optional<User> userOptional = userRepository.findByUsernameOrEmail(login, login);
+        if (userOptional.isEmpty()) {
+            return false;
+        }
+
+        User user = userOptional.get();
+        String storedPassword = user.getPassword();
+        if (storedPassword == null || storedPassword.isBlank()) {
+            return false;
+        }
+
+        // Support legacy records where passwords were stored in plain text.
+        if (rawPassword.equals(storedPassword)) {
+            user.setPassword(passwordEncoder.encode(rawPassword));
+            userRepository.save(user);
+            return true;
+        }
+
+        return false;
+    }
+
     @Transactional(readOnly = true)
     public boolean isConfiguredLibrarianCredential(String login, String password) {
         return login != null
                 && password != null
                 && LIBRARIAN_EMAIL.equalsIgnoreCase(login)
                 && LIBRARIAN_PASSWORD.equals(password);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isConfiguredDevCredential(String login, String password) {
+        return login != null
+                && password != null
+                && DEV_USERNAME.equalsIgnoreCase(login)
+                && DEV_PASSWORD.equals(password);
     }
 
     @Transactional
@@ -84,6 +121,31 @@ public class UserService implements UserDetailsService {
         librarian.setEnabled(true);
         librarian.setPassword(passwordEncoder.encode(LIBRARIAN_PASSWORD));
         userRepository.save(librarian);
+    }
+
+    @Transactional
+    public void ensureConfiguredDevMemberAccount() {
+        Optional<User> existing = userRepository.findByUsername(DEV_USERNAME);
+        if (existing.isPresent()) {
+            User user = existing.get();
+            user.setRole(User.UserRole.MEMBER);
+            user.setEnabled(true);
+            user.setFullName(user.getFullName() == null || user.getFullName().isBlank() ? "Developer User" : user.getFullName());
+            user.setName(user.getName() == null || user.getName().isBlank() ? user.getFullName() : user.getName());
+            user.setPassword(passwordEncoder.encode(DEV_PASSWORD));
+            userRepository.save(user);
+            return;
+        }
+
+        User devUser = new User();
+        devUser.setUsername(DEV_USERNAME);
+        devUser.setEmail("dev@library.local");
+        devUser.setFullName("Developer User");
+        devUser.setName("Developer User");
+        devUser.setRole(User.UserRole.MEMBER);
+        devUser.setEnabled(true);
+        devUser.setPassword(passwordEncoder.encode(DEV_PASSWORD));
+        userRepository.save(devUser);
     }
 
     @Transactional(readOnly = true)

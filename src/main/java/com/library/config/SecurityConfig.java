@@ -53,7 +53,6 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                     .requestMatchers("/", "/login", "/*.html", "/index.html", "/admin-dashboard.html", "/student-dashboard.html", "/css/**", "/js/**", "/favicon.ico").permitAll()
-                        .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/register").permitAll()
 
@@ -86,11 +85,12 @@ public class SecurityConfig {
                         // All other requests require authentication
                         .anyRequest().authenticated()
                 )
-                .httpBasic(httpBasic -> {})
+                .httpBasic(httpBasic -> httpBasic.authenticationEntryPoint((request, response, authException) -> {
+                    response.setStatus(401);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"error\":\"Unauthorized\"}");
+                }))
                 .authenticationProvider(authenticationProvider());
-
-        // For H2 console
-        http.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()));
 
         return http.build();
     }
