@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -20,7 +21,7 @@ public class BookService {
         return bookRepository.findAll();
     }
 
-    public Optional<Book> getBookById(Long id) {
+    public Optional<Book> getBookById(UUID id) {
         return bookRepository.findById(id);
     }
 
@@ -48,6 +49,10 @@ public class BookService {
     }
 
     public Book createBook(Book book) {
+        if (bookRepository.existsByIsbn(book.getIsbn())) {
+            throw new RuntimeException("ISBN already exists");
+        }
+
         // Ensure available copies doesn't exceed total copies
         if (book.getAvailableCopies() > book.getTotalCopies()) {
             book.setAvailableCopies(book.getTotalCopies());
@@ -55,9 +60,15 @@ public class BookService {
         return bookRepository.save(book);
     }
 
-    public Book updateBook(Long id, Book bookDetails) {
+    public Book updateBook(UUID id, Book bookDetails) {
         Book book = bookRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Book not found with id: " + id));
+
+        if (!book.getIsbn().equals(bookDetails.getIsbn()) && bookRepository.existsByIsbn(bookDetails.getIsbn())) {
+            throw new RuntimeException("ISBN already exists");
+        }
+
+        Integer previousTotalCopies = book.getTotalCopies();
 
         book.setIsbn(bookDetails.getIsbn());
         book.setTitle(bookDetails.getTitle());
@@ -70,19 +81,19 @@ public class BookService {
         book.setCoverImageUrl(bookDetails.getCoverImageUrl());
 
         // Adjust available copies if total copies changed
-        int difference = bookDetails.getTotalCopies() - book.getTotalCopies();
+        int difference = bookDetails.getTotalCopies() - previousTotalCopies;
         book.setAvailableCopies(Math.max(0, book.getAvailableCopies() + difference));
 
         return bookRepository.save(book);
     }
 
-    public void deleteBook(Long id) {
+    public void deleteBook(UUID id) {
         Book book = bookRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Book not found with id: " + id));
         bookRepository.delete(book);
     }
 
-    public void incrementAvailableCopies(Long bookId) {
+    public void incrementAvailableCopies(UUID bookId) {
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new RuntimeException("Book not found with id: " + bookId));
         if (book.getAvailableCopies() < book.getTotalCopies()) {
@@ -91,7 +102,7 @@ public class BookService {
         }
     }
 
-    public void decrementAvailableCopies(Long bookId) {
+    public void decrementAvailableCopies(UUID bookId) {
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new RuntimeException("Book not found with id: " + bookId));
         if (book.getAvailableCopies() > 0) {
