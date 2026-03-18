@@ -8,13 +8,14 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
 
     List<Transaction> findByMemberId(Long memberId);
 
-    List<Transaction> findByBookId(Long bookId);
+    List<Transaction> findByBookId(UUID bookId);
 
     List<Transaction> findByStatus(Transaction.TransactionStatus status);
 
@@ -28,7 +29,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     long countActiveBorrowingsByMember(@Param("memberId") Long memberId);
 
     @Query("SELECT t FROM Transaction t WHERE t.book.id = :bookId AND t.status = 'BORROWED'")
-    List<Transaction> findActiveBorrowingsByBook(@Param("bookId") Long bookId);
+    List<Transaction> findActiveBorrowingsByBook(@Param("bookId") UUID bookId);
 
     @Query("SELECT t FROM Transaction t ORDER BY t.createdAt DESC")
     List<Transaction> findAllOrderByCreatedAtDesc();
