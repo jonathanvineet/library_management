@@ -28,6 +28,10 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         try {
+            if (userService.isConfiguredLibrarianCredential(loginRequest.getUsername(), loginRequest.getPassword())) {
+                userService.ensureConfiguredLibrarianAccount();
+            }
+
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequest.getUsername(),
@@ -43,6 +47,7 @@ public class AuthController {
 
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Login successful");
+            response.put("userId", user.getId());
             response.put("username", user.getUsername());
             response.put("fullName", user.getFullName());
             response.put("role", user.getRole());
@@ -70,6 +75,7 @@ public class AuthController {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Map<String, Object> response = new HashMap<>();
+        response.put("userId", user.getId());
         response.put("username", user.getUsername());
         response.put("fullName", user.getFullName());
         response.put("role", user.getRole());
