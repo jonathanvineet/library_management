@@ -52,7 +52,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
-                        .requestMatchers("/", "/index.html", "/admin-dashboard.html", "/student-dashboard.html", "/login.html", "/register.html", "/css/**", "/js/**").permitAll()
+                    .requestMatchers("/", "/login", "/*.html", "/index.html", "/admin-dashboard.html", "/student-dashboard.html", "/css/**", "/js/**", "/favicon.ico").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/register").permitAll()
@@ -66,7 +66,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/books/**").hasRole("LIBRARIAN")
                         .requestMatchers(HttpMethod.DELETE, "/api/books/**").hasRole("LIBRARIAN")
 
-                        // Members endpoints - Only Librarians can manage
+                        // Members endpoints - Members can fetch profile by email; librarians manage all
+                        .requestMatchers(HttpMethod.GET, "/api/members/email/**").hasAnyRole("LIBRARIAN", "MEMBER")
                         .requestMatchers("/api/members/**").hasRole("LIBRARIAN")
 
                         // Transactions endpoints - Members can view their own, Librarians can manage all
@@ -74,6 +75,13 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/transactions/**").hasRole("LIBRARIAN")
                         .requestMatchers(HttpMethod.PUT, "/api/transactions/**").hasRole("LIBRARIAN")
                         .requestMatchers(HttpMethod.DELETE, "/api/transactions/**").hasRole("LIBRARIAN")
+
+                        // Book request workflow
+                        .requestMatchers(HttpMethod.POST, "/api/book-requests/request").hasRole("MEMBER")
+                        .requestMatchers(HttpMethod.GET, "/api/book-requests/member/**").hasAnyRole("LIBRARIAN", "MEMBER")
+                        .requestMatchers("/api/book-requests/pending").hasRole("LIBRARIAN")
+                        .requestMatchers(HttpMethod.POST, "/api/book-requests/*/approve").hasRole("LIBRARIAN")
+                        .requestMatchers(HttpMethod.POST, "/api/book-requests/*/reject").hasRole("LIBRARIAN")
 
                         // All other requests require authentication
                         .anyRequest().authenticated()

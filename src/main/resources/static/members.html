@@ -143,7 +143,7 @@
 
         async function loadMembers() {
             try {
-                allMembers = await fetchAPI('/api/members');
+                allMembers = await fetchAPI('/members');
                 displayMembers(allMembers);
             } catch (error) {
                 console.error('Error loading members:', error);
@@ -165,10 +165,10 @@
                     <td>${member.email}</td>
                     <td>${member.phone || 'N/A'}</td>
                     <td>${member.address || 'N/A'}</td>
-                    <td><span class="badge badge-${member.active ? 'success' : 'danger'}">${member.active ? 'Active' : 'Inactive'}</span></td>
+                    <td><span class="badge badge-${member.status === 'ACTIVE' ? 'success' : 'danger'}">${member.status}</span></td>
                     <td>
                         <button class="btn btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.875rem;" onclick="editMember(${member.id})">✏️ Edit</button>
-                        <button class="btn btn-${member.active ? 'warning' : 'success'}" style="padding: 0.375rem 0.75rem; font-size: 0.875rem;" onclick="toggleMemberStatus(${member.id}, ${member.active})">${member.active ? '🚫 Deactivate' : '✅ Activate'}</button>
+                        <button class="btn btn-${member.status === 'ACTIVE' ? 'warning' : 'success'}" style="padding: 0.375rem 0.75rem; font-size: 0.875rem;" onclick="toggleMemberStatus(${member.id}, '${member.status}')">${member.status === 'ACTIVE' ? '🚫 Deactivate' : '✅ Activate'}</button>
                     </td>
                 </tr>
             `).join('');
@@ -200,7 +200,7 @@
 
         async function editMember(id) {
             try {
-                const member = await fetchAPI(`/api/members/${id}`);
+                const member = await fetchAPI(`/members/${id}`);
                 document.getElementById('modalTitle').textContent = 'Edit Member';
                 document.getElementById('memberId').value = member.id;
                 document.getElementById('name').value = member.name;
@@ -214,11 +214,12 @@
         }
 
         async function toggleMemberStatus(id, currentStatus) {
-            const action = currentStatus ? 'deactivate' : 'activate';
+            const nextStatus = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+            const action = nextStatus === 'ACTIVE' ? 'activate' : 'deactivate';
             if (!confirm(`Are you sure you want to ${action} this member?`)) return;
             
             try {
-                await fetchAPI(`/api/members/${id}/${action}`, { method: 'PUT' });
+                await fetchAPI(`/members/${id}/status?status=${nextStatus}`, { method: 'PATCH' });
                 showNotification(`Member ${action}d successfully`, 'success');
                 loadMembers();
             } catch (error) {
@@ -235,18 +236,19 @@
                 email: document.getElementById('email').value,
                 phone: document.getElementById('phone').value,
                 address: document.getElementById('address').value,
-                active: true
+                status: 'ACTIVE',
+                maxBooksAllowed: 3
             };
             
             try {
                 if (id) {
-                    await fetchAPI(`/api/members/${id}`, {
+                    await fetchAPI(`/members/${id}`, {
                         method: 'PUT',
                         body: JSON.stringify(memberData)
                     });
                     showNotification('Member updated successfully', 'success');
                 } else {
-                    await fetchAPI('/api/members', {
+                    await fetchAPI('/members', {
                         method: 'POST',
                         body: JSON.stringify(memberData)
                     });

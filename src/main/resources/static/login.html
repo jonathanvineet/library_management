@@ -52,16 +52,6 @@
                 </p>
             </div>
             
-            <div class="default-credentials">
-                <h4>🔑 Test Credentials</h4>
-                <div class="credentials-list">
-                    <p><strong>Librarian Account:</strong></p>
-                    <p>Username: librarian | Password: librarian123</p>
-                    
-                    <p style="margin-top: 0.75rem;"><strong>Member Account:</strong></p>
-                    <p>Username: member | Password: member123</p>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -107,8 +97,7 @@
                 const response = await fetch(`${apiBaseUrl}/auth/login`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Basic ' + credentials
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ username, password })
                 });
@@ -117,14 +106,14 @@
                 
                 if (response.ok) {
                     sessionStorage.setItem('authCredentials', credentials);
-
                     // Normalize role (strip Spring Security prefix if present)
                     const rawRole = String(data.role || '').toUpperCase();
                     const normalizedRole = rawRole.startsWith('ROLE_') ? rawRole.substring(5) : rawRole;
                     sessionStorage.setItem('userRole', normalizedRole);
-
+                    sessionStorage.setItem('userId', data.userId || '');
                     sessionStorage.setItem('username', data.username);
                     sessionStorage.setItem('fullName', data.fullName);
+                    sessionStorage.setItem('email', data.email || '');
                     
                     alertBox.className = 'alert alert-success';
                     alertBox.textContent = '✅ Login successful! Redirecting...';

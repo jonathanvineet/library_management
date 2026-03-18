@@ -38,6 +38,14 @@
             <button class="btn btn-primary" onclick="openBorrowModal()" id="borrowBtn">📖 Borrow Book</button>
         </div>
 
+        <div class="glass-card mb-2" id="requestsBox" style="display:none;">
+            <div class="flex-between mb-2">
+                <h2 style="font-size: 1.25rem; font-weight: 600;">Book Requests</h2>
+                <button class="btn btn-outline" onclick="loadPendingRequests()">Refresh</button>
+            </div>
+            <div id="pendingRequestsBody" class="text-center">No pending requests</div>
+        </div>
+
         <!-- Filter Buttons -->
         <div class="flex gap-1 mb-2">
             <button class="btn btn-outline" onclick="filterTransactions('all')">All Transactions</button>
@@ -136,6 +144,9 @@
             if (role !== 'LIBRARIAN') {
                 document.getElementById('membersNav').style.display = 'none';
                 document.getElementById('borrowBtn').style.display = 'none';
+            } else {
+                document.getElementById('requestsBox').style.display = 'block';
+                loadPendingRequests();
             }
             
             loadTransactions();
@@ -143,7 +154,7 @@
 
         async function loadTransactions() {
             try {
-                allTransactions = await fetchAPI('/api/transactions');
+                allTransactions = await fetchAPI('/transactions');
                 displayTransactions(allTransactions);
             } catch (error) {
                 console.error('Error loading transactions:', error);
@@ -170,7 +181,7 @@
                     <td><span class="badge badge-${getStatusBadge(t.status)}">${t.status}</span></td>
                     <td>
                         ${role === 'LIBRARIAN' && t.status === 'BORROWED' ? `
-                            <button class="btn btn-success" style="padding: 0.375rem 0.75rem; font-size: 0.875rem;" onclick="returnBook(${t.id})">✅ Return</button>
+                            <button class="btn btn-success" style="padding: 0.375rem 0.75rem; font-size: 0.875rem;" onclick="returnBook('${t.id}')">✅ Return</button>
                         ` : `
                             <span class="badge badge-info">View Only</span>
                         `}
@@ -208,8 +219,8 @@
             try {
                 // Load members and available books
                 const [members, books] = await Promise.all([
-                    fetchAPI('/api/members/active'),
-                    fetchAPI('/api/books')
+                    fetchAPI('/members/active'),
+                    fetchAPI('/books')
                 ]);
                 
                 const memberSelect = document.getElementById('memberId');
@@ -241,8 +252,7 @@
             if (!confirm('Are you sure you want to mark this book as returned?')) return;
             
             try {
-                // Backend expects POST for returning books
-                await fetchAPI(`/api/transactions/${transactionId}/return`, { method: 'POST' });
+                await fetchAPI(`/transactions/return/${transactionId}`, { method: 'POST' });
                 showNotification('Book returned successfully', 'success');
                 loadTransactions();
             } catch (error) {
@@ -254,7 +264,7 @@
             e.preventDefault();
             
             const memberId = parseInt(document.getElementById('memberId').value);
-            const bookId = parseInt(document.getElementById('bookId').value);
+            const bookId = document.getElementById('bookId').value;
             const dueDateValue = document.getElementById('dueDate').value;
 
             // Calculate loan days based on selected due date.
@@ -271,7 +281,7 @@
             };
             
             try {
-                await fetchAPI('/api/transactions/borrow', {
+                await fetchAPI('/transactions/borrow', {
                     method: 'POST',
                     body: JSON.stringify(transactionData)
                 });
@@ -282,6 +292,61 @@
                 showNotification(error.message || 'Failed to borrow book', 'error');
             }
         });
+
+        async function loadPendingRequests() {
+            try {
+                const requests = await fetchAPI('/book-requests/pending');
+                const body = document.getElementById('pendingRequestsBody');
+                if (!requests.length) {
+                    body.innerHTML = '<p class="text-center">No pending requests</p>';
+                    return;
+                }
+
+                body.innerHTML = requests.map(r => `
+                    <div style="display:flex; justify-content:space-between; gap:1rem; padding:0.75rem 0; border-bottom:1px solid var(--glass-border); align-items:center;">
+                        <div>
+                            <strong>${r.member.name}</strong> requested <strong>${r.book.title}</strong>
+                            <div style="font-size:0.85rem; color:var(--text-secondary);">${formatDate(r.requestedAt)}</div>
+                        </div>
+                        <div style="display:flex; gap:0.5rem;">
+                            <button class="btn btn-success" style="padding:0.35rem 0.7rem;" onclick="approveRequest('${r.id}')">Approve</button>
+                            <button class="btn btn-danger" style="padding:0.35rem 0.7rem;" onclick="rejectRequest('${r.id}')">Reject</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                showNotification('Failed to load pending requests', 'error');
+            }
+        }
+
+        async function approveRequest(requestId) {
+            try {
+                const result = await fetchAPI(`/book-requests/${requestId}/approve`, { method: 'POST' });
+                if (result.status === 'REJECTED') {
+                    showNotification(result.decisionMessage || 'Request rejected due to member limit', 'error');
+                } else {
+                    showNotification('Request approved and book issued', 'success');
+                }
+                loadPendingRequests();
+                loadTransactions();
+            } catch (error) {
+                showNotification(error.message || 'Failed to approve request', 'error');
+            }
+        }
+
+        async function rejectRequest(requestId) {
+            const reason = prompt('Reason for rejection:', 'You already reached the book limit so you cannot get this book');
+            try {
+                await fetchAPI(`/book-requests/${requestId}/reject`, {
+                    method: 'POST',
+                    body: JSON.stringify({ reason: reason || 'Request rejected by librarian' })
+                });
+                showNotification('Request rejected', 'success');
+                loadPendingRequests();
+            } catch (error) {
+                showNotification(error.message || 'Failed to reject request', 'error');
+            }
+        }
 
         initTransactionsPage();
     </script>

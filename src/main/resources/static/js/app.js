@@ -41,6 +41,17 @@ function logout() {
 // Utility Functions
 async function fetchAPI(endpoint, options = {}) {
     try {
+        // Accept both '/books' and '/api/books' to avoid accidental double-prefix URLs.
+        let normalizedEndpoint = (endpoint || '').trim();
+        if (!normalizedEndpoint.startsWith('/')) {
+            normalizedEndpoint = `/${normalizedEndpoint}`;
+        }
+        if (normalizedEndpoint === '/api') {
+            normalizedEndpoint = '';
+        } else if (normalizedEndpoint.startsWith('/api/')) {
+            normalizedEndpoint = normalizedEndpoint.substring(4);
+        }
+
         const credentials = getAuthCredentials();
         const headers = {
             'Content-Type': 'application/json',
@@ -51,7 +62,7 @@ async function fetchAPI(endpoint, options = {}) {
             headers['Authorization'] = 'Basic ' + credentials;
         }
         
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        const response = await fetch(`${API_BASE_URL}${normalizedEndpoint}`, {
             headers,
             ...options
         });

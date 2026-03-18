@@ -185,7 +185,7 @@
                 const role = getUserRole();
                 
                 // Load statistics
-                const books = await fetchAPI('/api/books');
+                const books = await fetchAPI('/books');
                 
                 // Update statistics
                 document.getElementById('totalBooks').textContent = books.length;
@@ -195,16 +195,16 @@
                 // Load members and transactions (librarian only)
                 if (role === 'LIBRARIAN') {
                     const [members, transactions, overdueList] = await Promise.all([
-                        fetchAPI('/api/members/active'),
-                        fetchAPI('/api/transactions/active'),
-                        fetchAPI('/api/transactions/overdue')
+                        fetchAPI('/members/active'),
+                        fetchAPI('/transactions/active'),
+                        fetchAPI('/transactions/overdue')
                     ]);
                     
                     document.getElementById('totalMembers').textContent = members.length;
                     document.getElementById('activeTransactions').textContent = transactions.length;
                     
                     // Load all transactions for recent view
-                    const allTransactions = await fetchAPI('/api/transactions');
+                    const allTransactions = await fetchAPI('/transactions');
                     displayRecentTransactions(allTransactions.slice(0, 5));
                     
                     // Display overdue books if any

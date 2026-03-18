@@ -48,17 +48,9 @@
                     <input type="email" id="email" name="email" placeholder="Enter your email" required>
                 </div>
                 
-                <div class="form-group">
-                    <label for="role">Role</label>
-                    <select id="role" name="role" required>
-                        <option value="">Select role</option>
-                        <option value="MEMBER">Member</option>
-                        <option value="LIBRARIAN">Librarian</option>
-                    </select>
-                    <p style="font-size: 0.813rem; color: var(--text-muted); margin-top: 0.25rem;">
-                        Members can borrow books, Librarians can manage the system
-                    </p>
-                </div>
+                <p style="font-size: 0.813rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                    New accounts are created as members. Librarian account is restricted.
+                </p>
                 
                 <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
                     Create Account
@@ -121,8 +113,7 @@
                 username: document.getElementById('username').value,
                 password: document.getElementById('password').value,
                 fullName: document.getElementById('fullName').value,
-                email: document.getElementById('email').value,
-                role: document.getElementById('role').value
+                email: document.getElementById('email').value
             };
 
             const alertBox = document.getElementById('alert');
