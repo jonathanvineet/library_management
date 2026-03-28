@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transactions — LibraryHub</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="page-wrapper">
+        <aside class="sidebar" id="sidebar"></aside>
+
+        <main class="main-content" id="main-content">
+            <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+
+            <header class="page-header">
+                <div>
+                    <h1 id="pageTitle">Transactions</h1>
+                    <p id="pageSubtitle">Track book loans, returns, and overdue fines.</p>
+                </div>
+                <div class="hidden" id="librarianActions">
+                    <button class="btn btn-primary" onclick="openBorrowModal()">📖 Issue Book</button>
+                </div>
+            </header>
+
+            <!-- Pending Requests (Librarian Only) -->
+            <div class="glass-card mb-2xl hidden" id="requestsSection">
+                <div class="section-header">
+                    <h2>Pending Book Requests</h2>
+                    <button class="btn btn-sm btn-ghost" onclick="loadPendingRequests()">Refresh</button>
+                </div>
+                <div id="pendingRequestsContainer">
+                    <div class="empty-state">
+                        <div class="empty-icon">⏳</div>
+                        <p>Loading requests...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-bar" id="statusFilters">
+                <button class="filter-chip active" onclick="filterTransactions('all')">All Transactions</button>
+                <button class="filter-chip" onclick="filterTransactions('active')">Active Loans</button>
+                <button class="filter-chip" onclick="filterTransactions('overdue')">Overdue</button>
+                <button class="filter-chip" onclick="filterTransactions('returned')">Returned</button>
+            </div>
+
+            <div id="transactionsContainer">
+                <div class="empty-state">
+                    <div class="empty-icon">📋</div>
+                    <p>Loading transactions...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Borrow Book Modal (Librarian Only) -->
+    <div class="modal-backdrop" id="borrowModalWrap">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2>Issue Book to Member</h2>
+                <button class="modal-close" onclick="closeBorrowModal()">✕</button>
+            </div>
+            <form id="borrowForm">
+                <div class="form-group mb-md">
+                    <label for="memberSelect">Select Active Member</label>
+                    <select id="memberSelect" class="form-control" required>
+                        <option value="">Choose a member...</option>
+                    </select>
+                </div>
+                
+                <div class="form-group mb-md">
+                    <label for="bookSelect">Select Available Book</label>
+                    <select id="bookSelect" class="form-control" required>
+                        <option value="">Choose a book...</option>
+                    </select>
+                </div>
+                
+                <div class="form-group mb-md">
+                    <label for="loanDays">Loan Duration (Days)</label>
+                    <input type="number" id="loanDays" class="form-control" value="14" min="1" max="60" required>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-ghost" onclick="closeBorrowModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="borrowSubmitBtn">Issue Book</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        let allTransactions = [];
+        let currentFilter = 'all';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!checkAuth()) return;
+            buildSidebar('transactions');
+            setupMobileMenu();
+            
+            if (isLibrarian()) {
+                document.getElementById('librarianActions').classList.remove('hidden');
+                document.getElementById('requestsSection').classList.remove('hidden');
+                loadPendingRequests();
+                loadAllTransactions();
+            } else {
+                document.getElementById('pageTitle').textContent = 'My Borrowing History';
+                document.getElementById('pageSubtitle').textContent = 'Track your active loans, returns, and requested books.';
+                loadMemberTransactions();
+            }
+        });
+
+        async function loadAllTransactions() {
+            try {
+                allTransactions = await fetchAPI('/transactions');
+                filterTransactions(currentFilter);
+            } catch (err) {
+                showNotification('Failed to load transactions', 'error');
+            }
+        }
+
+        async function loadMemberTransactions() {
+            try {
+                allTransactions = await fetchAPI('/transactions/my-transactions');
+                filterTransactions(currentFilter);
+            } catch (err) {
+                showNotification('Failed to load your borrowing history', 'error');
+            }
+        }
+
+        function filterTransactions(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('#statusFilters .filter-chip').forEach(btn => btn.classList.remove('active'));
+            // crude mapping assuming identical order
+            let idx = ['all','active','overdue','returned'].indexOf(filter);
+            if(idx !== -1) document.querySelectorAll('#statusFilters .filter-chip')[idx].classList.add('active');
+
+            let filtered = allTransactions;
+            if (filter === 'active') filtered = allTransactions.filter(t => t.status === 'BORROWED');
+            else if (filter === 'overdue') filtered = allTransactions.filter(t => t.status === 'OVERDUE');
+            else if (filter === 'returned') filtered = allTransactions.filter(t => t.status === 'RETURNED');
+            
+            renderTransactions(filtered);
+        }
+
+        function renderTransactions(transactions) {
+            const container = document.getElementById('transactionsContainer');
+            if (transactions.length === 0) {
+                container.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>No transactions found matching the filter.</p></div>`;
+                return;
+            }
+
+            const isLib = isLibrarian();
+
+            container.innerHTML = transactions.map(t => {
+                const bookCover = getBookCover(t.book);
+                const badgeColor = getStatusBadge(t.status);
+                
+                let returnAction = '';
+                if (isLib && t.status !== 'RETURNED') {
+                    returnAction = `<button class="btn btn-sm btn-success" onclick="returnBook('${t.id}')">↩️ Process Return</button>`;
+                }
+
+                let fineInfo = '';
+                if (t.fineAmount > 0) {
+                    fineInfo = `<span class="badge badge-danger">Fine: $${t.fineAmount.toFixed(2)}</span>`;
+                }
+
+                let dayCount = '';
+                if (t.status === 'BORROWED') {
+                    const days = daysFromNow(t.dueDate);
+                    if (days < 0) dayCount = `<span class="text-danger text-sm font-bold">${Math.abs(days)} days overdue</span>`;
+                    else if (days === 0) dayCount = `<span class="text-warning text-sm font-bold">Due today</span>`;
+                    else dayCount = `<span class="text-primary text-sm">Due in ${days} days</span>`;
+                }
+
+                return `
+                    <div class="transaction-card">
+                        <div class="transaction-info">
+                            <div class="transaction-book-thumb">
+                                <img src="${bookCover}" alt="Cover" style="width:100%; height:100%; border-radius:inherit; object-fit:cover;">
+                            </div>
+                            <div class="transaction-details">
+                                <h4 class="${t.status === 'OVERDUE' ? 'text-danger' : 'text-primary'}" title="${t.book.title}">${t.book.title}</h4>
+                                <div class="transaction-member mb-sm font-bold">Member: ${t.member.name}</div>
+                                <div class="transaction-dates flex gap-lg">
+                                    <span>Borrowed: ${formatDate(t.borrowDate)}</span>
+                                    <span>Due: <strong style="color:var(--text-primary)">${formatDate(t.dueDate)}</strong></span>
+                                    <span>Returned: ${formatDate(t.returnDate)}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="transaction-actions" style="flex-direction:column; align-items:flex-end; gap:8px;">
+                            <div class="flex gap-md">
+                                ${dayCount}
+                                <span class="badge badge-${badgeColor}">${t.status}</span>
+                                ${fineInfo}
+                            </div>
+                            ${returnAction}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function returnBook(id) {
+            if (!confirm('Process return for this book?')) return;
+            try {
+                const res = await fetchAPI(`/transactions/return/${id}`, { method: 'POST' });
+                if (res.fineAmount > 0) {
+                    showNotification(`Book returned! Accrued fine: $${res.fineAmount.toFixed(2)}`, 'warning');
+                } else {
+                    showNotification('Book returned successfully.', 'success');
+                }
+                loadAllTransactions();
+            } catch (err) {
+                showNotification(err.message || 'Failed to process return', 'error');
+            }
+        }
+
+        // ================= Librarian Modals & Requests =================
+        async function openBorrowModal() {
+            try {
+                const [members, books] = await Promise.all([
+                    fetchAPI('/members/active'),
+                    fetchAPI('/books')
+                ]);
+                
+                const mSelect = document.getElementById('memberSelect');
+                mSelect.innerHTML = '<option value="">Choose an active member...</option>' +
+                    members.map(m => `<option value="${m.id}">${m.name} (${m.email})</option>`).join('');
+                
+                const availBooks = books.filter(b => b.availableCopies > 0);
+                const bSelect = document.getElementById('bookSelect');
+                bSelect.innerHTML = '<option value="">Choose an available book...</option>' +
+                    availBooks.map(b => `<option value="${b.id}">${b.title} (${b.availableCopies} available)</option>`).join('');
+                
+                document.getElementById('loanDays').value = '14';
+                document.getElementById('borrowModalWrap').classList.add('active');
+            } catch (err) {
+                showNotification('Failed to load members or catalogue', 'error');
+            }
+        }
+
+        function closeBorrowModal() {
+            document.getElementById('borrowModalWrap').classList.remove('active');
+        }
+
+        document.getElementById('borrowForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('borrowSubmitBtn');
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+
+            const payload = {
+                memberId: parseInt(document.getElementById('memberSelect').value),
+                bookId: document.getElementById('bookSelect').value,
+                loanDays: parseInt(document.getElementById('loanDays').value)
+            };
+
+            try {
+                await fetchAPI('/transactions/borrow', { method: 'POST', body: JSON.stringify(payload) });
+                showNotification('Book issued successfully', 'success');
+                closeBorrowModal();
+                loadAllTransactions();
+            } catch (err) {
+                showNotification(err.message || 'Failed to issue book', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Issue Book';
+            }
+        });
+
+        async function loadPendingRequests() {
+            try {
+                const requests = await fetchAPI('/book-requests/pending');
+                const container = document.getElementById('pendingRequestsContainer');
+                
+                if (!requests || requests.length === 0) {
+                    container.innerHTML = '<div class="text-secondary p-4 text-center">No pending request queue.</div>';
+                    return;
+                }
+
+                container.innerHTML = requests.map(r => {
+                    const cover = getBookCover(r.book);
+                    return `
+                        <div class="request-card">
+                            <img src="${cover}" alt="cover" style="width:36px; height:48px; object-fit:cover; border-radius:4px;">
+                            <div class="request-info">
+                                <div class="text-sm"><strong>${r.member.name}</strong> wants to borrow <strong>${r.book.title}</strong></div>
+                                <div class="request-date">Requested: ${formatDate(r.requestedAt)}</div>
+                            </div>
+                            <div class="request-actions">
+                                <button class="btn btn-sm btn-success" onclick="approveRequest('${r.id}')">Approve</button>
+                                <button class="btn btn-sm btn-ghost text-danger" onclick="rejectRequest('${r.id}')">Reject</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                showNotification('Failed to load pending requests', 'error');
+            }
+        }
+
+        async function approveRequest(reqId) {
+            try {
+                const res = await fetchAPI(`/book-requests/${reqId}/approve`, { method: 'POST' });
+                showNotification(res.decisionMessage || 'Request handled successfully', 'success');
+                loadPendingRequests();
+                loadAllTransactions();
+            } catch (err) {
+                showNotification(err.message || 'Failed to approve request', 'error');
+            }
+        }
+
+        async function rejectRequest(reqId) {
+            const reason = prompt('Optional rejection reason (e.g. "Limit reached"):', '');
+            if (reason === null) return; // cancelled
+            
+            try {
+                await fetchAPI(`/book-requests/${reqId}/reject`, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ reason: reason || 'Not approved by librarian at this time.' })
+                });
+                showNotification('Request rejected', 'success');
+                loadPendingRequests();
+            } catch (err) {
+                showNotification(err.message || 'Failed to reject request', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

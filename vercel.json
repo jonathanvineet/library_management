@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "name": "library-management",
+  "builds": [
+    {
+      "src": "api/index.java",
+      "use": "@vercel-community/maven"
+    },
+    {
+      "src": "public/**/*",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "api/index.java"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "public/$1"
+    }
+  ],
+  "env": {
+    "SPRING_PROFILES_ACTIVE": "prod"
+  }
+}

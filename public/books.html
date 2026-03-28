@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Books Catalog — LibraryHub</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .book-actions-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(10, 14, 39, 0.85);
+            backdrop-filter: blur(4px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: var(--space-sm);
+            opacity: 0;
+            transition: opacity var(--transition-normal);
+            z-index: 10;
+        }
+        .book-card:hover .book-actions-overlay {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <aside class="sidebar" id="sidebar"></aside>
+
+        <main class="main-content" id="main-content">
+            <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+
+            <header class="page-header">
+                <div>
+                    <h1>Books Catalog</h1>
+                    <p>Discover our collection of thousands of premium titles.</p>
+                </div>
+                <div class="hidden" id="librarianActions">
+                    <button class="btn btn-primary" onclick="openBookModal()">➕ Add New Book</button>
+                </div>
+            </header>
+
+            <div class="search-container">
+                <div class="search-input-wrap">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="searchInput" placeholder="Search books by title, author, or ISBN...">
+                </div>
+                <button class="btn btn-ghost" onclick="clearSearch()">Clear</button>
+            </div>
+
+            <div class="filter-bar" id="categoryFilters">
+                <button class="filter-chip active" onclick="filterByCategory('all')">All Books</button>
+            </div>
+
+            <div class="books-grid" id="booksGrid">
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <div class="empty-icon">📚</div>
+                    <p>Loading catalog...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add/Edit Book Modal -->
+    <div class="modal-backdrop" id="bookModalWrap">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add New Book</h2>
+                <button class="modal-close" onclick="closeBookModal()">✕</button>
+            </div>
+            <form id="bookForm">
+                <input type="hidden" id="bookId">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:var(--space-md);">
+                    <div class="form-group mb-md">
+                        <label for="isbn">ISBN</label>
+                        <input type="text" id="isbn" class="form-control" placeholder="10 or 13 digits" required>
+                    </div>
+                    <div class="form-group mb-md">
+                        <label for="category">Category</label>
+                        <input type="text" id="category" class="form-control" placeholder="Fiction, Sci-Fi..." required>
+                    </div>
+                </div>
+
+                <div class="form-group mb-md">
+                    <label for="title">Title</label>
+                    <input type="text" id="title" class="form-control" placeholder="Book Title" required>
+                </div>
+
+                <div class="form-group mb-md">
+                    <label for="author">Author</label>
+                    <input type="text" id="author" class="form-control" placeholder="Author Name" required>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:var(--space-md);">
+                    <div class="form-group mb-md">
+                        <label for="publisher">Publisher</label>
+                        <input type="text" id="publisher" class="form-control">
+                    </div>
+                    <div class="form-group mb-md">
+                        <label for="publicationYear">Year</label>
+                        <input type="number" id="publicationYear" class="form-control" min="1000" max="2100">
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:var(--space-md);">
+                    <div class="form-group mb-md">
+                        <label for="totalCopies">Total Copies</label>
+                        <input type="number" id="totalCopies" class="form-control" min="1" required>
+                    </div>
+                    <div class="form-group mb-md hidden" id="availableCopiesGroup">
+                        <label for="availableCopies">Available Copies</label>
+                        <input type="number" id="availableCopies" class="form-control" min="0">
+                    </div>
+                </div>
+
+                <div class="form-group mb-md">
+                    <label for="coverImageUrl">Cover Image URL (Optional)</label>
+                    <input type="url" id="coverImageUrl" class="form-control" placeholder="Leave empty for auto-generated Unsplash cover">
+                </div>
+
+                <div class="form-group mb-md">
+                    <label for="description">Description</label>
+                    <textarea id="description" class="form-control" rows="3" placeholder="Brief summary..."></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-ghost" onclick="closeBookModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="saveBookBtn">Save Book</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Request Book Modal (Member Only) -->
+    <div class="modal-backdrop" id="requestModalWrap">
+        <div class="modal-box" style="max-width: 440px;">
+            <div class="modal-header">
+                <h2>Request Book</h2>
+                <button class="modal-close" onclick="closeRequestModal()">✕</button>
+            </div>
+            <p class="text-secondary mb-lg">Are you sure you want to request <strong id="requestBookTitle" class="text-primary"></strong>?</p>
+            <p class="text-sm text-muted mb-xl">Librarians will review your request. You can have a maximum of 3 active books.</p>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeRequestModal()">Cancel</button>
+                <button type="button" class="btn btn-success" id="confirmRequestBtn">Confirm Request</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="js/app.js"></script>
+    <script>
+        let allBooks = [];
+        let categories = new Set();
+        let currentCategory = 'all';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!checkAuth()) return;
+            buildSidebar('books');
+            setupMobileMenu();
+            
+            if (isLibrarian()) {
+                document.getElementById('librarianActions').classList.remove('hidden');
+            }
+
+            initCatalog();
+
+            let searchTimeout;
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    const query = e.target.value.trim().toLowerCase();
+                    if(query) filterBooksBySearch(query);
+                    else filterByCategory(currentCategory);
+                }, 300);
+            });
+        });
+
+        async function initCatalog() {
+            try {
+                allBooks = await fetchAPI('/books');
+                extractCategories();
+                renderBooks(allBooks);
+            } catch (err) {
+                showNotification('Failed to load catalog', 'error');
+            }
+        }
+
+        function extractCategories() {
+            categories.clear();
+            allBooks.forEach(b => { if(b.category) categories.add(b.category); });
+            const filterBar = document.getElementById('categoryFilters');
+            
+            filterBar.innerHTML = `<button class="filter-chip active" id="filter-all" onclick="filterByCategory('all')">All Books</button>`;
+            
+            [...categories].sort().forEach(cat => {
+                filterBar.innerHTML += `<button class="filter-chip" id="filter-${cat.replace(/\s+/g,'-')}" onclick="filterByCategory('${cat}')">${cat}</button>`;
+            });
+        }
+
+        function filterByCategory(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+            const id = cat === 'all' ? 'filter-all' : `filter-${cat.replace(/\s+/g,'-')}`;
+            const btn = document.getElementById(id);
+            if(btn) btn.classList.add('active');
+
+            const filtered = cat === 'all' ? allBooks : allBooks.filter(b => b.category === cat);
+            renderBooks(filtered);
+        }
+
+        function filterBooksBySearch(query) {
+            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+            const filtered = allBooks.filter(b => 
+                (b.title && b.title.toLowerCase().includes(query)) ||
+                (b.author && b.author.toLowerCase().includes(query)) ||
+                (b.isbn && b.isbn.toLowerCase().includes(query)) ||
+                (b.category && b.category.toLowerCase().includes(query))
+            );
+            renderBooks(filtered);
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            filterByCategory('all');
+        }
+
+        function renderBooks(booksToRender) {
+            const grid = document.getElementById('booksGrid');
+            if (booksToRender.length === 0) {
+                grid.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1;"><div class="empty-icon">🔍</div><p>No books found matching your criteria.</p></div>`;
+                return;
+            }
+
+            const isLib = isLibrarian();
+
+            grid.innerHTML = booksToRender.map(book => {
+                const cover = getBookCover(book);
+                const isAvail = book.availableCopies > 0;
+                
+                let actionOverlay = '';
+                if (isLib) {
+                    actionOverlay = `
+                        <div class="book-actions-overlay">
+                            <button class="btn btn-sm btn-ghost" onclick="editBook('${book.id}')" style="background:#0a0e27; border-color:var(--accent-primary)">✏️ Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteBookItem('${book.id}', '${book.title.replace(/'/g,"\\'")}')">🗑️ Delete</button>
+                        </div>
+                    `;
+                } else {
+                    if (isAvail) {
+                        actionOverlay = `
+                            <div class="book-actions-overlay">
+                                <button class="btn btn-sm btn-success" onclick="openRequestBook('${book.id}', '${book.title.replace(/'/g,"\\'")}')">📖 Request</button>
+                            </div>
+                        `;
+                    }
+                }
+
+                return `
+                    <div class="book-card">
+                        <div class="book-cover-wrap">
+                            <img src="${cover}" alt="${book.title}" loading="lazy">
+                            <div class="book-availability badge badge-${isAvail ? 'success' : 'danger'}" style="background-color:var(--bg-deep); padding: 4px 10px;">
+                                ${isAvail ? `${book.availableCopies} Available` : 'Out of Stock'}
+                            </div>
+                            ${actionOverlay}
+                        </div>
+                        <div class="book-body">
+                            <div class="text-xs text-primary font-bold mb-xs" style="text-transform:uppercase; letter-spacing:1px; font-size:0.7rem;">${book.category || 'General'}</div>
+                            <h3 title="${book.title}">${book.title}</h3>
+                            <p class="book-author">by ${book.author}</p>
+                            <div class="book-meta">
+                                <span class="text-sm text-secondary">ISBN: ${book.isbn}</span>
+                                <span class="text-sm font-bold">${book.publicationYear || ''}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ================= Librarian Modals =================
+        function openBookModal() {
+            document.getElementById('modalTitle').textContent = 'Add New Book';
+            document.getElementById('bookForm').reset();
+            document.getElementById('bookId').value = '';
+            document.getElementById('availableCopiesGroup').classList.add('hidden');
+            document.getElementById('isbn').readOnly = false;
+            document.getElementById('bookModalWrap').classList.add('active');
+        }
+
+        function closeBookModal() {
+            document.getElementById('bookModalWrap').classList.remove('active');
+        }
+
+        function editBook(id) {
+            const book = allBooks.find(b => b.id === id);
+            if(!book) return;
+
+            document.getElementById('modalTitle').textContent = 'Edit Book';
+            document.getElementById('bookId').value = book.id;
+            document.getElementById('isbn').value = book.isbn;
+            // isbn.readOnly = true; // In current backend, updating ISBN requires logic check, but it's allowed.
+            document.getElementById('category').value = book.category || '';
+            document.getElementById('title').value = book.title;
+            document.getElementById('author').value = book.author;
+            document.getElementById('publisher').value = book.publisher || '';
+            document.getElementById('publicationYear').value = book.publicationYear || '';
+            document.getElementById('totalCopies').value = book.totalCopies;
+            document.getElementById('availableCopies').value = book.availableCopies;
+            document.getElementById('coverImageUrl').value = book.coverImageUrl || '';
+            document.getElementById('description').value = book.description || '';
+
+            document.getElementById('availableCopiesGroup').classList.remove('hidden');
+            document.getElementById('bookModalWrap').classList.add('active');
+        }
+
+        document.getElementById('bookForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('bookId').value;
+            const btn = document.getElementById('saveBookBtn');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            const payload = {
+                isbn: document.getElementById('isbn').value,
+                title: document.getElementById('title').value,
+                author: document.getElementById('author').value,
+                publisher: document.getElementById('publisher').value,
+                publicationYear: document.getElementById('publicationYear').value ? parseInt(document.getElementById('publicationYear').value) : null,
+                category: document.getElementById('category').value,
+                totalCopies: parseInt(document.getElementById('totalCopies').value),
+                description: document.getElementById('description').value,
+                coverImageUrl: document.getElementById('coverImageUrl').value || null
+            };
+
+            const availEl = document.getElementById('availableCopies');
+            if(id && availEl && !availEl.parentElement.classList.contains('hidden')) {
+                payload.availableCopies = parseInt(availEl.value);
+            } else {
+                payload.availableCopies = payload.totalCopies;
+            }
+
+            try {
+                if (id) {
+                    await fetchAPI(`/books/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+                    showNotification('Book updated successfully');
+                } else {
+                    await fetchAPI('/books', { method: 'POST', body: JSON.stringify(payload) });
+                    showNotification('Book added successfully');
+                }
+                closeBookModal();
+                initCatalog();
+            } catch (err) {
+                showNotification(err.message || 'Failed to save book', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Save Book';
+            }
+        });
+
+        async function deleteBookItem(id, title) {
+            if(!confirm(`Are you absolutely sure you want to delete "${title}"? This cannot be undone.`)) return;
+            try {
+                await fetchAPI(`/books/${id}`, { method: 'DELETE' });
+                showNotification('Book deleted');
+                initCatalog();
+            } catch(e) {
+                showNotification(e.message || 'Could not delete book. It might be tied to active loans.', 'error');
+            }
+        }
+
+        // ================= Member Book Requests =================
+        let currentRequestBookId = null;
+
+        function openRequestBook(bookId, title) {
+            currentRequestBookId = bookId;
+            document.getElementById('requestBookTitle').textContent = title;
+            document.getElementById('requestModalWrap').classList.add('active');
+        }
+
+        function closeRequestModal() {
+            currentRequestBookId = null;
+            document.getElementById('requestModalWrap').classList.remove('active');
+            let btn = document.getElementById('confirmRequestBtn');
+            btn.textContent = 'Confirm Request';
+            btn.disabled = false;
+        }
+
+        document.getElementById('confirmRequestBtn').addEventListener('click', async (e) => {
+            if(!currentRequestBookId) return;
+            const btn = e.target;
+            btn.disabled = true;
+            btn.textContent = 'Requesting...';
+
+            try {
+                const userId = getUserId();
+                await fetchAPI(`/book-requests/request`, {
+                    method: 'POST',
+                    body: JSON.stringify({ bookId: currentRequestBookId, userId })
+                });
+                showNotification('Book requested successfully. Waiting for librarian approval.', 'success');
+                closeRequestModal();
+            } catch (err) {
+                showNotification(err.message || 'Failed to request book', 'error');
+                closeRequestModal();
+            }
+        });
+
+    </script>
+</body>
+</html>
