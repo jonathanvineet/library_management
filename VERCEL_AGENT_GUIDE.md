@@ -1,56 +1,52 @@
-# Agent Guide: Vercel-Maven Hybrid Architecture
+# Agent Guide: Full-Stack Monorepo (Next.js + Maven + Capacitor)
 
-This project has been refactored from a monolithic Spring Boot application into a **Vercel-Maven Hybrid** application. This allows the backend (Java/Maven) and frontend (Static HTML/JS) to be hosted together on Vercel's serverless infrastructure.
+This project is a premium **Full-Stack Monorepo**. It integrates a Java/Maven backend with a modern Next.js frontend and native-type mobile support for Android and iOS.
 
 ## 🏗️ Architecture Overview
 
-1.  **Frontend (`public/`):** All static assets (HTML, CSS, JS) from `src/main/resources/static` have been moved to the root `public/` directory. Vercel serves these natively via its Edge Network.
-2.  **API Bridge (`api/index.java`):** A single "Monolithic Bridge" acts as an entry point for all `/api/*` requests. It uses the `aws-serverless-java-container-springboot3` library to wrap the entire Spring Boot application into a single Serverless Function.
-3.  **Maven Build (`pom.xml`):** The project uses the `@vercel-community/maven` runtime. Vercel runs `mvn clean install` on every deployment.
-4.  **Database:** The application is locked to the **PostgreSQL (Supabase)** database. Local H2 will not work on Vercel due to the ephemeral filesystem.
+1.  **Backend (Root):** A standard Spring Boot 3 application (Java/Maven). It acts as the **source of truth for business logic** and provides a REST API to the frontend.
+2.  **Frontend (`/next`):** A modern React UI built with **Next.js 14**, TypeScript, and Tailwind CSS. It is optimized for Vercel and Capacitor.
+3.  **Mobile (Capacitor):** Wraps the Next.js static export (`/next/out`) to provide native Android and iOS applications.
+4.  **Database:** Powered by **Supabase (PostgreSQL)** for production-grade persistence.
 
 ---
 
-## 🛠️ How to Make Changes
+## 🛠️ Maintenance & Development
 
-### 1. Adding/Modifying Backend Logic
-You should continue to write your code in `src/main/java/com/library/...` as per standard Spring Boot practices.
-- The `api/index.java` bridge automatically picks up any new `@RestController` or `@Service` you add to the project.
-- **Do not** modify `api/index.java` unless you are changing the fundamental way the application boots or the routing structure.
+### 1. Backend Logic
+Continue to build your API in `src/main/java/com/library/...`. 
+- **Deployment:** The backend should be hosted on a platform like **Railway.app** or **Render.com**.
+- **Run Locally:** `mvn spring-boot:run`.
 
-### 2. Modifying the Frontend
-- All frontend changes must be made in the root `public/` directory.
-- **Note:** Changes made to `src/main/resources/static` will **NOT** be reflected on Vercel.
+### 2. Frontend Logic (Next.js)
+The primary UI lives in the `/next` directory.
+- **Run Locally:** `cd next && npm run dev`.
+- **Styling:** Uses Tailwind CSS with custom tokens in `next/src/app/globals.css`.
+- **Build for Web:** `cd next && npm run build`.
 
-### 3. Environment Variables
-When deploying to Vercel, ensure the following environment variables are set in the Vercel Dashboard:
-- `SPRING_DATASOURCE_URL` (Supabase JDBC URL)
-- `SPRING_DATASOURCE_USERNAME`
-- `SPRING_DATASOURCE_PASSWORD`
-- `SPRING_PROFILES_ACTIVE=prod`
-
-### 4. Local Development
-To run the project locally for testing:
-- **Option A (Traditional):** 
-  Move the `public/` content back to `src/main/resources/static` (or use a symbolic link) and run `mvn spring-boot:run`.
-- **Option B (Vercel CLI):** 
-  If you have the Vercel CLI installed, run `vercel dev`. This most accurately simulates the production environment.
+### 3. Mobile Dispatch (Capacitor)
+Syncing the Next.js UI to native platforms:
+1.  **Static Export:** `cd next && npm run build` (Generates `/next/out`).
+2.  **Capacitor Sync:** `npx cap sync android` or `npx cap sync ios`.
+3.  **Open Native IDE:** `npx cap open android` (Android Studio) or `npx cap open ios` (Xcode).
 
 ---
 
 ## ⚠️ Important Constraints for Agents
 
-1.  **Statelessness:** Never use the local filesystem to store data (e.g., file uploads or H2 databases). Always use Supabase or external S3-compatible storage.
-2.  **Cold Starts:** Initial requests after inactivity may take 1-4 seconds while the JVM boots. Keep the startup logic in `LibraryManagementApplication` lean.
-3.  **Dependencies:** When adding new Maven dependencies, ensure they are compatible with **Java 17**, as Vercel's current stable Java runtime is optimized for this version.
-4.  **Routing:** All UI routes in `vercel.json` are mapped to `public`. If you add new static pages, they will be picked up automatically.
+- **Static Export Only:** Capacitor requires Next.js to be in `output: 'export'` mode. Avoid Next.js server features like `getServerSideProps` or native `Image` optimization that requires a Node.js server.
+- **API URLs:** Use environment variables to toggle between `localhost:8080` and the production Railway URL in `next/src/app/page.tsx` or a centralized API utility.
+- **Universal Styling:** Ensure all UI changes follow the **Deep Navy Glassmorph** design system to maintain platform consistency across Web, Android, and iOS.
+- **Statelessness:** The mobile app is entirely client-side. All persistence must go through the REST API to Supabase.
 
 ---
 
 ## 📁 File Map
 
-- `vercel.json`: The core configuration for Vercel.
-- `api/index.java`: The Java Serverless entry point.
-- `public/`: The frontend source of truth.
-- `src/main/java/`: The backend business logic (Spring Boot).
-- `pom.xml`: Build configuration.
+- `/next`: Frontend source (Vercel source root).
+- `/src/main/java`: Backend source (API source).
+- `/android`: Native Android project.
+- `/ios`: Native iOS project.
+- `capacitor.config.ts`: Cross-platform configuration.
+- `pom.xml`: Backend build configuration.
+- `package.json`: Root monorepo orchestration scripts.

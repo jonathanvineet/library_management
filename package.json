@@ -1,0 +1,21 @@
+{
+  "name": "library-hub-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "next:dev": "npm --prefix next run dev",
+    "next:build": "npm --prefix next run build",
+    "next:export": "npm --prefix next run build && npm --prefix next run export",
+    "backend:run": "mvn spring-boot:run",
+    "mobile:sync": "cap sync",
+    "mobile:open:android": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/ios": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
+  }
+}

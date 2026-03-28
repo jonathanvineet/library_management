@@ -48,3 +48,5 @@ build/
 *.db
 *.mv.db
 *.trace.db
+
+/node_modules
