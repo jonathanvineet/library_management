@@ -1,276 +1,264 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Library Management System - Dashboard</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Dashboard — LibraryHub</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div class="container">
-            <div class="navbar-brand">📚 LibraryHub</div>
-            <ul class="navbar-nav">
-                <li><a href="index.html" class="nav-link active">Dashboard</a></li>
-                <li><a href="books.html" class="nav-link">Books</a></li>
-                <li><a href="members.html" class="nav-link" id="membersNav">Members</a></li>
-                <li><a href="transactions.html" class="nav-link">Transactions</a></li>
-                <li>
-                    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
-                        <span id="themeIcon">🌙</span>
-                    </button>
-                </li>
-                <li class="user-info">
-                    <span id="userDisplay"></span>
-                    <button onclick="logout()" class="btn-logout">Logout</button>
-                </li>
-            </ul>
-        </div>
-    </nav>
+    <div class="page-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar"></aside>
 
-    <!-- Main Content -->
-    <div class="container">
-        <div class="flex-between mb-2">
-            <h1 style="font-size: 2.5rem; font-weight: 700;">Dashboard</h1>
-            <p style="color: var(--text-secondary); font-size: 1rem;">Welcome to your library management dashboard</p>
-        </div>
+        <!-- Main Content -->
+        <main class="main-content" id="main-content">
+            <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
 
-        <!-- Statistics Cards -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-value" id="totalBooks">0</div>
-                <div class="stat-label">📚 Total Books</div>
-            </div>
-            <div class="stat-card secondary">
-                <div class="stat-value" id="availableBooks">0</div>
-                <div class="stat-label">✅ Available Books</div>
-            </div>
-            <div class="stat-card success">
-                <div class="stat-value" id="totalMembers">0</div>
-                <div class="stat-label">👥 Active Members</div>
-            </div>
-            <div class="stat-card warning">
-                <div class="stat-value" id="activeTransactions">0</div>
-                <div class="stat-label">📖 Active Loans</div>
-            </div>
-        </div>
+            <header class="page-header">
+                <div>
+                    <h1>Dashboard</h1>
+                    <p>Welcome back! Here's what's happening today.</p>
+                </div>
+                <div class="flex gap-sm hidden" id="librarianActions">
+                    <a href="books.html" class="btn btn-primary">➕ Add Book</a>
+                    <a href="members.html" class="btn btn-ghost">👥 Manage Members</a>
+                </div>
+            </header>
 
-        <!-- Quick Actions -->
-        <div class="glass-card mb-2" id="quickActionsCard">
-            <h2 style="margin-bottom: 1rem; font-size: 1.5rem; font-weight: 600;">Quick Actions</h2>
-            <div class="flex gap-1" id="quickActions">
-                <!-- Actions will be populated based on user role -->
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-card info">
+                    <div class="stat-icon">📚</div>
+                    <div class="stat-value" id="statTotalBooks">0</div>
+                    <div class="stat-label">Total Books Catalog</div>
+                </div>
+                <div class="stat-card success">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-value" id="statAvailableBooks">0</div>
+                    <div class="stat-label">Books Available</div>
+                </div>
+                <div class="stat-card primary" id="memberStatCard">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-value" id="statTotalMembers">0</div>
+                    <div class="stat-label">Active Members</div>
+                </div>
+                <div class="stat-card warning">
+                    <div class="stat-icon">📖</div>
+                    <div class="stat-value" id="statActiveLoans">0</div>
+                    <div class="stat-label">Active Loans</div>
+                </div>
             </div>
-        </div>
 
-        <!-- Recent Transactions -->
-        <div class="glass-card mb-2">
-            <div class="flex-between mb-2">
-                <h2 style="font-size: 1.5rem; font-weight: 600;">Recent Transactions</h2>
-                <a href="transactions.html" class="btn btn-outline">View All →</a>
-            </div>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Member</th>
-                            <th>Book</th>
-                            <th>Borrow Date</th>
-                            <th>Due Date</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="recentTransactions">
-                        <tr>
-                            <td colspan="5" class="text-center">Loading...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+            <!-- Dashboard Modules grid -->
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-2xl);">
+                <!-- Left Column -->
+                <div>
+                    <!-- Overdue Alerts (Librarian Only) -->
+                    <div class="glass-card mb-2xl hidden" id="overdueSection">
+                        <div class="section-header">
+                            <h2>⚠️ Overdue Alerts</h2>
+                            <a href="transactions.html" class="btn btn-sm btn-ghost">View All</a>
+                        </div>
+                        <div id="overdueList">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
 
-        <!-- Overdue Books Alert -->
-        <div class="glass-card mt-2" id="overdueSection" style="display: none;">
-            <h2 style="color: var(--error-600); margin-bottom: 1rem; font-size: 1.5rem; font-weight: 600;">⚠️ Overdue Books</h2>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Member</th>
-                            <th>Book</th>
-                            <th>Due Date</th>
-                            <th>Days Overdue</th>
-                            <th>Fine</th>
-                        </tr>
-                    </thead>
-                    <tbody id="overdueTransactions">
-                    </tbody>
-                </table>
+                    <!-- Recent Activity -->
+                    <div class="glass-card">
+                        <div class="section-header">
+                            <h2 id="activityTitle">Recent Activity</h2>
+                            <a href="transactions.html" class="btn btn-sm btn-ghost">View All</a>
+                        </div>
+                        <div id="activityList">
+                            <div class="empty-state">
+                                <div class="empty-icon">⏳</div>
+                                <p>Loading activity...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div>
+                    <!-- Pending Requests (Librarian Only) -->
+                    <div class="glass-card mb-2xl hidden" id="requestsSection">
+                        <div class="section-header">
+                            <h2>Pending Requests</h2>
+                        </div>
+                        <div id="pendingRequestsList">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="glass-card">
+                        <h2 style="font-size: 1.15rem; font-weight:700; margin-bottom: 1.2rem;">Quick Actions</h2>
+                        <div class="flex" style="flex-direction: column; gap: var(--space-sm);">
+                            <a href="books.html" class="btn btn-ghost w-full" style="justify-content: flex-start; padding: 1rem;">
+                                <span style="font-size: 1.3rem; margin-right: 12px;">🔍</span> Search Catalog
+                            </a>
+                            <a href="transactions.html" class="btn btn-ghost w-full" style="justify-content: flex-start; padding: 1rem;">
+                                <span style="font-size: 1.3rem; margin-right: 12px;">📋</span> My Transactions
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
+        </main>
     </div>
 
     <script src="js/app.js"></script>
     <script>
-        // Theme Management
-        function toggleTheme() {
-            const html = document.documentElement;
-            const currentTheme = html.getAttribute('data-theme');
-            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-            html.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            updateThemeIcon(newTheme);
-        }
-
-        function updateThemeIcon(theme) {
-            const icon = document.getElementById('themeIcon');
-            icon.textContent = theme === 'light' ? '🌙' : '☀️';
-        }
-
-        function loadSavedTheme() {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', savedTheme);
-            updateThemeIcon(savedTheme);
-        }
-
-        // Check authentication and setup page
-        function initDashboard() {
+        document.addEventListener('DOMContentLoaded', () => {
             if (!checkAuth()) return;
-            
-            loadSavedTheme();
-            
-            const role = getUserRole();
-            const username = getUsername();
-            const fullName = sessionStorage.getItem('fullName');
-            
-            // Display user info
-            document.getElementById('userDisplay').textContent = `${fullName || username} (${role})`;
-            
-            // Setup quick actions based on role
-            setupQuickActions(role);
-            
-            // Hide Members nav for non-librarians
-            if (role !== 'LIBRARIAN') {
-                document.getElementById('membersNav').style.display = 'none';
-            }
-            
-            // Load dashboard data
-            loadDashboard();
-        }
+            buildSidebar('dashboard');
+            setupMobileMenu();
+            loadDashboardData();
+        });
 
-        function setupQuickActions(role) {
-            const quickActions = document.getElementById('quickActions');
+        async function loadDashboardData() {
+            const isLib = isLibrarian();
             
-            if (role === 'LIBRARIAN') {
-                quickActions.innerHTML = `
-                    <a href="books.html" class="btn btn-primary">➕ Add New Book</a>
-                    <a href="members.html" class="btn btn-secondary">👤 Register Member</a>
-                    <a href="transactions.html" class="btn btn-success">📖 Borrow Book</a>
-                `;
+            if (isLib) {
+                document.getElementById('librarianActions').classList.remove('hidden');
+                document.getElementById('requestsSection').classList.remove('hidden');
+                document.getElementById('overdueSection').classList.remove('hidden');
+                document.getElementById('activityTitle').textContent = 'Library Activity';
             } else {
-                quickActions.innerHTML = `
-                    <a href="books.html" class="btn btn-primary">📚 Browse Books</a>
-                    <a href="transactions.html" class="btn btn-secondary">📖 My Transactions</a>
-                `;
+                // For member, hide member-specific stat and adjust grid
+                document.getElementById('memberStatCard').style.display = 'none';
+                document.querySelector('.stats-grid').style.gridTemplateColumns = 'repeat(3, 1fr)';
+                document.getElementById('activityTitle').textContent = 'My Borrowing History';
             }
-        }
 
-        // Load dashboard data
-        async function loadDashboard() {
             try {
-                const role = getUserRole();
-                
-                // Load statistics
+                // Fetch books to calculate active/total
                 const books = await fetchAPI('/books');
+                const totalCopies = books.reduce((sum, b) => sum + b.totalCopies, 0);
+                const availableCopies = books.reduce((sum, b) => sum + b.availableCopies, 0);
                 
-                // Update statistics
-                document.getElementById('totalBooks').textContent = books.length;
-                document.getElementById('availableBooks').textContent = 
-                    books.filter(b => b.availableCopies > 0).length;
-                
-                // Load members and transactions (librarian only)
-                if (role === 'LIBRARIAN') {
-                    const [members, transactions, overdueList] = await Promise.all([
-                        fetchAPI('/members/active'),
-                        fetchAPI('/transactions/active'),
-                        fetchAPI('/transactions/overdue')
-                    ]);
+                animateCounter(document.getElementById('statTotalBooks'), totalCopies);
+                animateCounter(document.getElementById('statAvailableBooks'), availableCopies);
+
+                if (isLib) {
+                    // Librarian Data Load
+                    const membersReq = fetchAPI('/members');
+                    const transReq = fetchAPI('/transactions');
+                    const reqsReq = fetchAPI('/book-requests/pending');
+
+                    const [members, transactions, pendingReqs] = await Promise.all([membersReq, transReq, reqsReq]);
+
+                    animateCounter(document.getElementById('statTotalMembers'), members.filter(m => m.status === 'ACTIVE').length);
                     
-                    document.getElementById('totalMembers').textContent = members.length;
-                    document.getElementById('activeTransactions').textContent = transactions.length;
+                    const activeLoans = transactions.filter(t => t.status === 'BORROWED');
+                    animateCounter(document.getElementById('statActiveLoans'), activeLoans.length);
+
+                    renderActivityList(transactions.slice(0, 5), true);
+                    renderPendingRequests(pendingReqs);
                     
-                    // Load all transactions for recent view
-                    const allTransactions = await fetchAPI('/transactions');
-                    displayRecentTransactions(allTransactions.slice(0, 5));
-                    
-                    // Display overdue books if any
-                    if (overdueList.length > 0) {
-                        displayOverdueTransactions(overdueList);
-                    }
+                    const overdue = transactions.filter(t => t.status === 'OVERDUE');
+                    renderOverdue(overdue.slice(0, 4));
+
                 } else {
-                    // Members see limited stats
-                    document.getElementById('totalMembers').textContent = '-';
-                    document.getElementById('activeTransactions').textContent = '-';
-                    displayRecentTransactions([]);
+                    // Member Data Load
+                    const transReq = fetchAPI('/transactions/my-transactions');
+                    const [transactions] = await Promise.all([transReq]);
+                    
+                    const activeLoans = transactions.filter(t => t.status === 'BORROWED');
+                    animateCounter(document.getElementById('statActiveLoans'), activeLoans.length);
+                    
+                    renderActivityList(transactions.slice(0, 5), false);
                 }
+
             } catch (error) {
-                console.error('Error loading dashboard:', error);
+                console.error('Failed to load dashboard', error);
+                showNotification('Could not load all dashboard data.', 'error');
             }
         }
 
-        function displayRecentTransactions(transactions) {
-            const tbody = document.getElementById('recentTransactions');
-            if (transactions.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center">No recent transactions</td></tr>';
+        function renderActivityList(logs, isLib) {
+            const list = document.getElementById('activityList');
+            if (!logs || logs.length === 0) {
+                list.innerHTML = '<div class="empty-state"><div class="empty-icon">🌱</div><p>No recent activity.</p></div>';
                 return;
             }
 
-            tbody.innerHTML = transactions.map(t => `
-                <tr>
-                    <td>${t.member.name}</td>
-                    <td>${t.book.title}</td>
-                    <td>${formatDate(t.borrowDate)}</td>
-                    <td>${formatDate(t.dueDate)}</td>
-                    <td><span class="badge badge-${getStatusBadge(t.status)}">${t.status}</span></td>
-                </tr>
-            `).join('');
-        }
+            list.innerHTML = logs.map(t => {
+                let txt = '';
+                let colorClass = 'info';
+                if (t.status === 'BORROWED') { txt = 'borrowed'; colorClass = 'primary'; }
+                else if (t.status === 'RETURNED') { txt = 'returned'; colorClass = 'success'; }
+                else if (t.status === 'OVERDUE') { txt = 'overdue'; colorClass = 'danger'; }
 
-        function displayOverdueTransactions(transactions) {
-            const section = document.getElementById('overdueSection');
-            const tbody = document.getElementById('overdueTransactions');
-            
-            section.style.display = 'block';
-            tbody.innerHTML = transactions.map(t => {
-                const daysOverdue = Math.floor((new Date() - new Date(t.dueDate)) / (1000 * 60 * 60 * 24));
                 return `
-                    <tr>
-                        <td>${t.member.name}</td>
-                        <td>${t.book.title}</td>
-                        <td>${formatDate(t.dueDate)}</td>
-                        <td>${daysOverdue} days</td>
-                        <td style="color: var(--error-600); font-weight: 600;">$${t.fineAmount || daysOverdue}</td>
-                    </tr>
+                    <div style="display:flex; gap:16px; padding: 12px 0; border-bottom: 1px solid var(--glass-border);">
+                        <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent-${colorClass}-glow); color: var(--accent-${colorClass}); display:flex; align-items:center; justify-content:center; font-size: 1.2rem; flex-shrink:0;">
+                            ${t.status === 'RETURNED' ? '↩️' : (t.status === 'OVERDUE' ? '⚠️' : '📖')}
+                        </div>
+                        <div>
+                            <p style="font-size:0.9rem; margin-bottom:2px;">
+                                ${isLib ? `<strong>${t.member.name}</strong> ` : 'You '}
+                                <span style="color:var(--text-secondary)">${txt}</span> 
+                                <strong>${t.book.title}</strong>
+                            </p>
+                            <p style="font-size:0.75rem; color:var(--text-muted);">${formatDate(t.createdAt)}</p>
+                        </div>
+                    </div>
                 `;
             }).join('');
+            
+            // remove last border
+            if(list.lastElementChild) list.lastElementChild.style.borderBottom = 'none';
         }
 
-        function getStatusBadge(status) {
-            const badges = {
-                'BORROWED': 'info',
-                'RETURNED': 'success',
-                'OVERDUE': 'danger',
-                'LOST': 'danger'
-            };
-            return badges[status] || 'info';
+        function renderPendingRequests(reqs) {
+            const list = document.getElementById('pendingRequestsList');
+            if (!reqs || reqs.length === 0) {
+                list.innerHTML = '<div class="text-center text-muted text-sm py-4">No pending requests.</div>';
+                return;
+            }
+
+            list.innerHTML = reqs.slice(0, 4).map(r => `
+                <div class="request-card" style="padding: 10px 0; border-bottom: 1px solid var(--glass-border);">
+                    <div>
+                        <div class="text-sm font-bold">${r.member.name}</div>
+                        <div class="text-sm text-secondary">${r.book.title}</div>
+                        <div style="font-size:0.7rem; color:var(--text-muted)">${formatDate(r.requestedAt)}</div>
+                    </div>
+                </div>
+            `).join('');
+            
+            const btnWrap = document.createElement('div');
+            btnWrap.style.marginTop = '1rem';
+            btnWrap.style.textAlign = 'center';
+            btnWrap.innerHTML = `<a href="transactions.html" class="text-sm text-primary font-bold">Manage All Requests →</a>`;
+            list.appendChild(btnWrap);
         }
 
-        // Initialize dashboard on page load
-        initDashboard();
+        function renderOverdue(overdueLogs) {
+            const list = document.getElementById('overdueList');
+            const wrap = document.getElementById('overdueSection');
+            
+            if (!overdueLogs || overdueLogs.length === 0) {
+                wrap.classList.add('hidden');
+                return;
+            }
+
+            list.innerHTML = overdueLogs.map(o => `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom: 1px solid var(--glass-border);">
+                    <div>
+                        <div class="text-sm font-bold text-danger">${o.book.title}</div>
+                        <div class="text-sm text-secondary" style="font-size:0.8rem">${o.member.name}</div>
+                    </div>
+                    <div style="text-align:right">
+                        <div class="text-sm text-muted">Due: ${formatDate(o.dueDate)}</div>
+                        <div class="text-sm font-bold text-danger">$${o.fineAmount.toFixed(2)} Fine</div>
+                    </div>
+                </div>
+            `).join('');
+        }
     </script>
 </body>
 </html>

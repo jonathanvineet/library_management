@@ -1,114 +1,79 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - Library Management System</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Register — LibraryHub</title>
+    <meta name="description" content="Create an account to access LibraryHub.">
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <div class="auth-container">
-        <div class="auth-card">
-            <!-- Theme Toggle -->
-            <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
-                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
-                    <span id="themeIcon">🌙</span>
-                </button>
+    <div class="auth-wrapper" style="flex-direction: row-reverse;">
+        <!-- Visual Side -->
+        <div class="auth-visual">
+            <img src="https://images.unsplash.com/photo-1507738978512-35798112892c?w=1200&h=1600&fit=crop" alt="Library">
+            <div class="auth-overlay-text">
+                <h2>Join the<br>Community</h2>
+                <p>Register today to get access to thousands of books, track your reading history, and more.</p>
             </div>
-            
-            <div class="auth-header">
-                <div class="auth-brand">📚</div>
-                <h1>Create Account</h1>
-                <p>Register for Library Management System</p>
+        </div>
+
+        <!-- Form Side -->
+        <div class="auth-form-side">
+            <div class="brand">
+                <div class="brand-icon">📖</div>
+                <div class="brand-text">LibraryHub</div>
             </div>
-            
-            <div id="alert" class="alert" style="display: none;"></div>
-            
+
+            <h1>Create Account</h1>
+            <p class="auth-subtitle">Fill in the details below to get started</p>
+
+            <div id="alert" class="auth-alert"></div>
+
             <form id="registerForm">
                 <div class="form-group">
                     <label for="username">Username</label>
-                    <input type="text" id="username" name="username" placeholder="Choose a username" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" placeholder="Create a password" required>
+                    <input type="text" id="username" class="form-control" placeholder="Choose a username" required>
                 </div>
                 
                 <div class="form-group">
                     <label for="fullName">Full Name</label>
-                    <input type="text" id="fullName" name="fullName" placeholder="Enter your full name" required>
+                    <input type="text" id="fullName" class="form-control" placeholder="Enter your full name" required>
                 </div>
                 
                 <div class="form-group">
                     <label for="email">Email</label>
-                    <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                    <input type="email" id="email" class="form-control" placeholder="Enter your email" required>
                 </div>
-                
-                <p style="font-size: 0.813rem; color: var(--text-muted); margin-bottom: 0.75rem;">
-                    New accounts are created as members. Librarian account is restricted.
-                </p>
-                
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="form-control" placeholder="Create a password" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg w-full" id="registerBtn" style="justify-content:center;">
                     Create Account
                 </button>
             </form>
-            
-            <div style="text-align: center; margin-top: 1.5rem;">
-                <p style="color: var(--text-secondary); font-size: 0.938rem;">
-                    Already have an account? 
-                    <a href="login.html" style="color: var(--primary-600); font-weight: 600; text-decoration: underline;">
-                        Sign in here
-                    </a>
-                </p>
+
+            <div class="auth-link">
+                Already have an account? <a href="login.html">Sign in here</a>
             </div>
         </div>
     </div>
 
     <script>
-        // Keep registration on Spring Boot origin so API calls are same-origin.
         if (window.location.port === '5500') {
             window.location.replace('http://localhost:8080/register.html');
         }
 
-        // Defensive cleanup: remove stale service workers that can break fetch in local dev.
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then((registrations) => {
-                registrations.forEach((registration) => registration.unregister());
-            }).catch(() => {
-                // Ignore cleanup errors; registration should still work without this.
-            });
-        }
+        const API = window.location.port === '5500' ? 'http://localhost:8080/api' : '/api';
 
-        // Theme Toggle Functionality
-        function toggleTheme() {
-            const html = document.documentElement;
-            const currentTheme = html.getAttribute('data-theme');
-            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-            html.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            updateThemeIcon(newTheme);
-        }
-
-        function updateThemeIcon(theme) {
-            const icon = document.getElementById('themeIcon');
-            icon.textContent = theme === 'light' ? '🌙' : '☀️';
-        }
-
-        // Load saved theme
-        document.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', savedTheme);
-            updateThemeIcon(savedTheme);
-        });
-
-        // Register Form Handler
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-
+            const alertBox = document.getElementById('alert');
+            const btn = document.getElementById('registerBtn');
+            
             const formData = {
                 username: document.getElementById('username').value,
                 password: document.getElementById('password').value,
@@ -116,43 +81,41 @@
                 email: document.getElementById('email').value
             };
 
-            const alertBox = document.getElementById('alert');
+            btn.textContent = 'Registering...';
+            btn.disabled = true;
+            alertBox.style.display = 'none';
 
             try {
-                const response = await fetch('/api/users/register', {
+                const response = await fetch(`${API}/users/register`, {
                     method: 'POST',
-                    credentials: 'omit',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
                 });
                 
                 const responseText = await response.text();
                 let data = null;
-                try {
-                    data = responseText ? JSON.parse(responseText) : null;
-                } catch (parseError) {
-                    data = { error: responseText };
-                }
+                try { data = responseText ? JSON.parse(responseText) : null; } 
+                catch (err) { data = { error: responseText }; }
                 
                 if (response.ok) {
-                    alertBox.className = 'alert alert-success';
-                    alertBox.textContent = '✅ Registration successful! Redirecting to login...';
+                    alertBox.className = 'auth-alert alert-success';
+                    alertBox.textContent = '✓ Registration successful! Redirecting to login...';
                     alertBox.style.display = 'block';
                     
-                    setTimeout(() => {
-                        window.location.href = '/login.html';
-                    }, 2000);
+                    setTimeout(() => { window.location.href = '/login.html'; }, 2000);
                 } else {
-                    alertBox.className = 'alert alert-error';
-                    alertBox.textContent = '❌ ' + (data.error || 'Registration failed. Please try again.');
+                    alertBox.className = 'auth-alert alert-error';
+                    alertBox.textContent = data?.error || 'Registration failed.';
                     alertBox.style.display = 'block';
+                    btn.textContent = 'Create Account';
+                    btn.disabled = false;
                 }
             } catch (error) {
-                alertBox.className = 'alert alert-error';
-                alertBox.textContent = '❌ Cannot reach backend. Open http://localhost:8080/register.html and ensure Spring Boot is running.';
+                alertBox.className = 'auth-alert alert-error';
+                alertBox.textContent = 'Cannot reach backend. Make sure Spring Boot is running.';
                 alertBox.style.display = 'block';
+                btn.textContent = 'Create Account';
+                btn.disabled = false;
             }
         });
     </script>

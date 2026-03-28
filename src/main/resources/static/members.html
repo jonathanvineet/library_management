@@ -1,107 +1,92 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Members - Library Management System</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Members — LibraryHub</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
-
 <body>
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div class="container">
-            <div class="navbar-brand">📚 LibraryHub</div>
-            <ul class="navbar-nav">
-                <li><a href="index.html" class="nav-link">Dashboard</a></li>
-                <li><a href="books.html" class="nav-link">Books</a></li>
-                <li><a href="members.html" class="nav-link active">Members</a></li>
-                <li><a href="transactions.html" class="nav-link">Transactions</a></li>
-                <li>
-                    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
-                        <span id="themeIcon">🌙</span>
-                    </button>
-                </li>
-                <li class="user-info">
-                    <span id="userDisplay"></span>
-                    <button onclick="logout()" class="btn-logout">Logout</button>
-                </li>
-            </ul>
-        </div>
-    </nav>
+    <div class="page-wrapper">
+        <aside class="sidebar" id="sidebar"></aside>
 
-    <!-- Main Content -->
-    <div class="container">
-        <div class="flex-between mb-2">
-            <h1 style="font-size: 2.5rem; font-weight: 700;">Member Management</h1>
-            <button class="btn btn-primary" onclick="openAddMemberModal()">➕ Register New Member</button>
-        </div>
+        <main class="main-content" id="main-content">
+            <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
 
-        <!-- Search Bar -->
-        <div class="search-bar">
-            <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search by name...">
-            <button class="btn btn-secondary" onclick="searchMembers()">Search</button>
-            <button class="btn btn-outline" onclick="clearSearch()">Clear</button>
-        </div>
+            <header class="page-header">
+                <div>
+                    <h1>Member Directory</h1>
+                    <p>Manage library members and their account statuses.</p>
+                </div>
+                <div>
+                    <button class="btn btn-primary" onclick="openMemberModal()">➕ Register New Member</button>
+                </div>
+            </header>
 
-        <!-- Members Table -->
-        <div class="glass-card">
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                            <th>Address</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="membersTableBody">
-                        <tr>
-                            <td colspan="6" class="text-center">Loading...</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div class="search-container">
+                <div class="search-input-wrap">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="searchInput" placeholder="Search members by name or email...">
+                </div>
+                <button class="btn btn-ghost" onclick="clearSearch()">Clear</button>
             </div>
-        </div>
+
+            <div class="filter-bar" id="statusFilters">
+                <button class="filter-chip active" onclick="filterByStatus('ALL')">All Members</button>
+                <button class="filter-chip" onclick="filterByStatus('ACTIVE')">Active</button>
+                <button class="filter-chip" onclick="filterByStatus('INACTIVE')">Inactive</button>
+                <button class="filter-chip" onclick="filterByStatus('SUSPENDED')">Suspended</button>
+            </div>
+
+            <div class="members-grid" id="membersGrid">
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <div class="empty-icon">👥</div>
+                    <p>Loading members...</p>
+                </div>
+            </div>
+        </main>
     </div>
 
     <!-- Add/Edit Member Modal -->
-    <div id="memberModal" class="modal">
-        <div class="modal-content">
+    <div class="modal-backdrop" id="memberModalWrap">
+        <div class="modal-box">
             <div class="modal-header">
-                <h2 class="modal-title" id="modalTitle">Register New Member</h2>
-                <button class="close-modal" onclick="closeMemberModal()">✕</button>
+                <h2 id="modalTitle">Register New Member</h2>
+                <button class="modal-close" onclick="closeMemberModal()">✕</button>
             </div>
             <form id="memberForm">
                 <input type="hidden" id="memberId">
+                <input type="hidden" id="memberStatus" value="ACTIVE">
                 
-                <div class="form-group">
+                <div class="form-group mb-md">
                     <label for="name">Full Name</label>
-                    <input type="text" id="name" required>
+                    <input type="text" id="name" class="form-control" placeholder="Jane Doe" required>
                 </div>
                 
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" required>
+                <div class="form-group mb-md">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" class="form-control" placeholder="jane@example.com" required>
                 </div>
                 
-                <div class="form-group">
-                    <label for="phone">Phone</label>
-                    <input type="tel" id="phone">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:var(--space-md);">
+                    <div class="form-group mb-md">
+                        <label for="phone">Phone Number</label>
+                        <input type="tel" id="phone" class="form-control" placeholder="+1 ...">
+                    </div>
+                    <div class="form-group mb-md">
+                        <label for="maxBooks">Max Books Allowed</label>
+                        <input type="number" id="maxBooks" class="form-control" min="1" max="10" value="5" required>
+                    </div>
                 </div>
-                
-                <div class="form-group">
-                    <label for="address">Address</label>
-                    <textarea id="address" rows="3"></textarea>
+
+                <div class="form-group mb-md">
+                    <label for="address">Mailing Address</label>
+                    <textarea id="address" class="form-control" rows="2" placeholder="123 Library St..."></textarea>
                 </div>
                 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline" onclick="closeMemberModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Member</button>
+                    <button type="button" class="btn btn-ghost" onclick="closeMemberModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="saveBtn">Save Member</button>
                 </div>
             </form>
         </div>
@@ -110,159 +95,169 @@
     <script src="js/app.js"></script>
     <script>
         let allMembers = [];
+        let curStatus = 'ALL';
 
-        function toggleTheme() {
-            const html = document.documentElement;
-            const currentTheme = html.getAttribute('data-theme');
-            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-            html.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            document.getElementById('themeIcon').textContent = newTheme === 'light' ? '🌙' : '☀️';
-        }
-
-        function initMembersPage() {
-            if (!checkAuth()) return;
-            
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', savedTheme);
-            document.getElementById('themeIcon').textContent = savedTheme === 'light' ? '🌙' : '☀️';
-            
-            const role = getUserRole();
-            const username = getUsername();
-            const fullName = sessionStorage.getItem('fullName');
-            
-            document.getElementById('userDisplay').textContent = `${fullName || username} (${role})`;
-            
-            if (role !== 'LIBRARIAN') {
-                window.location.href = '/index.html';
-                return;
-            }
-            
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!checkAuth() || !isLibrarian()) return;
+            buildSidebar('members');
+            setupMobileMenu();
             loadMembers();
-        }
+
+            let searchTimeout;
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    const query = e.target.value.trim().toLowerCase();
+                    if(query) filterBySearch(query);
+                    else filterByStatus(curStatus);
+                }, 300);
+            });
+        });
 
         async function loadMembers() {
             try {
                 allMembers = await fetchAPI('/members');
-                displayMembers(allMembers);
-            } catch (error) {
-                console.error('Error loading members:', error);
+                filterByStatus(curStatus);
+            } catch (err) {
                 showNotification('Failed to load members', 'error');
             }
         }
 
-        function displayMembers(members) {
-            const tbody = document.getElementById('membersTableBody');
-            
-            if (members.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center">No members found</td></tr>';
-                return;
-            }
+        function filterByStatus(status) {
+            curStatus = status;
+            document.querySelectorAll('#statusFilters .filter-chip').forEach(btn => btn.classList.remove('active'));
+            // crude mapping assuming identical order
+            let idx = ['ALL','ACTIVE','INACTIVE','SUSPENDED'].indexOf(status);
+            if(idx !== -1) document.querySelectorAll('#statusFilters .filter-chip')[idx].classList.add('active');
 
-            tbody.innerHTML = members.map(member => `
-                <tr>
-                    <td><strong>${member.name}</strong></td>
-                    <td>${member.email}</td>
-                    <td>${member.phone || 'N/A'}</td>
-                    <td>${member.address || 'N/A'}</td>
-                    <td><span class="badge badge-${member.status === 'ACTIVE' ? 'success' : 'danger'}">${member.status}</span></td>
-                    <td>
-                        <button class="btn btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.875rem;" onclick="editMember(${member.id})">✏️ Edit</button>
-                        <button class="btn btn-${member.status === 'ACTIVE' ? 'warning' : 'success'}" style="padding: 0.375rem 0.75rem; font-size: 0.875rem;" onclick="toggleMemberStatus(${member.id}, '${member.status}')">${member.status === 'ACTIVE' ? '🚫 Deactivate' : '✅ Activate'}</button>
-                    </td>
-                </tr>
-            `).join('');
+            const filtered = status === 'ALL' ? allMembers : allMembers.filter(m => m.status === status);
+            renderMembers(filtered);
         }
 
-        function searchMembers() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = allMembers.filter(member => 
-                member.name.toLowerCase().includes(query)
+        function filterBySearch(query) {
+            document.querySelectorAll('#statusFilters .filter-chip').forEach(btn => btn.classList.remove('active'));
+            const filtered = allMembers.filter(m => 
+                (m.name && m.name.toLowerCase().includes(query)) ||
+                (m.email && m.email.toLowerCase().includes(query))
             );
-            displayMembers(filtered);
+            renderMembers(filtered);
         }
 
         function clearSearch() {
             document.getElementById('searchInput').value = '';
-            displayMembers(allMembers);
+            filterByStatus('ALL');
         }
 
-        function openAddMemberModal() {
-            document.getElementById('modalTitle').textContent = 'Register New Member';
+        function renderMembers(members) {
+            const grid = document.getElementById('membersGrid');
+            if (members.length === 0) {
+                grid.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1;"><div class="empty-icon">👥</div><p>No members found.</p></div>`;
+                return;
+            }
+
+            grid.innerHTML = members.map(m => {
+                const init = m.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+                const badgeColor = getStatusBadge(m.status);
+                
+                let statusAction = '';
+                if(m.status === 'ACTIVE') {
+                    statusAction = `<button class="btn btn-sm btn-ghost" onclick="updateStatus(${m.id}, 'INACTIVE')" style="color:var(--accent-warning); border-color:var(--accent-warning)">⏸ Pause</button>`;
+                } else {
+                    statusAction = `<button class="btn btn-sm btn-ghost" onclick="updateStatus(${m.id}, 'ACTIVE')" style="color:var(--accent-success); border-color:var(--accent-success)">▶ Activate</button>`;
+                }
+
+                return `
+                    <div class="member-card">
+                        <div class="member-avatar">${init}</div>
+                        <div class="member-info">
+                            <div class="flex-between mb-xs">
+                                <h3>${m.name}</h3>
+                                <div class="badge badge-${badgeColor}">${m.status}</div>
+                            </div>
+                            <div class="member-email flex gap-xs">✉️  ${m.email}</div>
+                            <div class="member-details mt-1">📱 ${m.phone || 'No phone'}</div>
+                            
+                            <div class="member-actions mt-3">
+                                <button class="btn btn-sm btn-primary" onclick="editMember(${m.id})">Edit Info</button>
+                                ${statusAction}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function updateStatus(id, newStatus) {
+            try {
+                await fetchAPI(`/members/${id}/status?status=${newStatus}`, { method: 'PATCH' });
+                showNotification(`Member marked as ${newStatus}`, 'success');
+                loadMembers();
+            } catch (err) {
+                showNotification(err.message || 'Failed to update status', 'error');
+            }
+        }
+
+        function openMemberModal() {
+            document.getElementById('modalTitle').textContent = 'Register Member';
             document.getElementById('memberForm').reset();
             document.getElementById('memberId').value = '';
-            document.getElementById('memberModal').classList.add('active');
+            document.getElementById('memberStatus').value = 'ACTIVE';
+            document.getElementById('memberModalWrap').classList.add('active');
         }
 
         function closeMemberModal() {
-            document.getElementById('memberModal').classList.remove('active');
+            document.getElementById('memberModalWrap').classList.remove('active');
         }
 
-        async function editMember(id) {
-            try {
-                const member = await fetchAPI(`/members/${id}`);
-                document.getElementById('modalTitle').textContent = 'Edit Member';
-                document.getElementById('memberId').value = member.id;
-                document.getElementById('name').value = member.name;
-                document.getElementById('email').value = member.email;
-                document.getElementById('phone').value = member.phone || '';
-                document.getElementById('address').value = member.address || '';
-                document.getElementById('memberModal').classList.add('active');
-            } catch (error) {
-                showNotification('Failed to load member details', 'error');
-            }
-        }
-
-        async function toggleMemberStatus(id, currentStatus) {
-            const nextStatus = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-            const action = nextStatus === 'ACTIVE' ? 'activate' : 'deactivate';
-            if (!confirm(`Are you sure you want to ${action} this member?`)) return;
+        function editMember(id) {
+            const m = allMembers.find(x => x.id === id);
+            if (!m) return;
             
-            try {
-                await fetchAPI(`/members/${id}/status?status=${nextStatus}`, { method: 'PATCH' });
-                showNotification(`Member ${action}d successfully`, 'success');
-                loadMembers();
-            } catch (error) {
-                showNotification(error.message || `Failed to ${action} member`, 'error');
-            }
+            document.getElementById('modalTitle').textContent = 'Edit Member Profile';
+            document.getElementById('memberId').value = m.id;
+            document.getElementById('name').value = m.name;
+            document.getElementById('email').value = m.email;
+            document.getElementById('phone').value = m.phone || '';
+            document.getElementById('address').value = m.address || '';
+            document.getElementById('maxBooks').value = m.maxBooksAllowed || 5;
+            document.getElementById('memberStatus').value = m.status;
+            
+            document.getElementById('memberModalWrap').classList.add('active');
         }
 
         document.getElementById('memberForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const id = document.getElementById('memberId').value;
-            const memberData = {
+            const btn = document.getElementById('saveBtn');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            const payload = {
                 name: document.getElementById('name').value,
                 email: document.getElementById('email').value,
                 phone: document.getElementById('phone').value,
                 address: document.getElementById('address').value,
-                status: 'ACTIVE',
-                maxBooksAllowed: 3
+                status: document.getElementById('memberStatus').value,
+                maxBooksAllowed: parseInt(document.getElementById('maxBooks').value)
             };
-            
+
             try {
                 if (id) {
-                    await fetchAPI(`/members/${id}`, {
-                        method: 'PUT',
-                        body: JSON.stringify(memberData)
-                    });
-                    showNotification('Member updated successfully', 'success');
+                    await fetchAPI(`/members/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+                    showNotification('Member profile updated successfully');
                 } else {
-                    await fetchAPI('/members', {
-                        method: 'POST',
-                        body: JSON.stringify(memberData)
-                    });
-                    showNotification('Member registered successfully', 'success');
+                    await fetchAPI('/members', { method: 'POST', body: JSON.stringify(payload) });
+                    showNotification('Member registered successfully');
                 }
-                
                 closeMemberModal();
                 loadMembers();
-            } catch (error) {
-                showNotification(error.message || 'Failed to save member', 'error');
+            } catch (err) {
+                showNotification(err.message || 'Failed to save member', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Save Member';
             }
         });
-
-        initMembersPage();
     </script>
 </body>
 </html>
