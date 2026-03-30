@@ -13,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Example service demonstrating Supabase REST API integration
@@ -98,7 +99,7 @@ public class SupabaseIntegrationService {
      * Example: Create a notification using Supabase
      * This demonstrates working with your notifications table
      */
-    public void createNotification(Long userId, String message, String type) {
+    public void createNotification(UUID userId, String message, String type) {
         try {
             Map<String, Object> notification = new HashMap<>();
             notification.put("user_id", userId);

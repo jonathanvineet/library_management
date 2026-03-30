@@ -1,6 +1,6 @@
 package com.library.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
@@ -28,16 +28,13 @@ public class User {
     private String username;
 
     @NotBlank(message = "Password is required")
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @JsonIgnore
     @Column(nullable = false)
     private String password;
 
     @NotBlank(message = "Full name is required")
     @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;
-
-    @Column(name = "name", nullable = false, length = 100)
-    private String name;
 
     @Email(message = "Invalid email format")
     @Column(unique = true, length = 100)
@@ -57,17 +54,6 @@ public class User {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    @PrePersist
-    @PreUpdate
-    private void syncNameFields() {
-        if ((name == null || name.isBlank()) && fullName != null && !fullName.isBlank()) {
-            name = fullName;
-        }
-        if ((fullName == null || fullName.isBlank()) && name != null && !name.isBlank()) {
-            fullName = name;
-        }
-    }
 
     public enum UserRole {
         LIBRARIAN,

@@ -220,24 +220,47 @@ git clone https://github.com/jonathanvineet/library_management.git
 cd library_management
 ```
 
-### 2️⃣ Verify Java & Maven
-```bash
-# Check Java version (must be 21+)
-java -version
+### 2️⃣ Set Up Supabase Database
 
-# Check Maven version (must be 3.9+)
-mvn -version
+1. Create a Supabase account at [supabase.com](https://supabase.com)
+2. Create a new project
+3. Get your credentials:
+   - Project URL: `https://your-project-ref.supabase.co`
+   - Database credentials from Project Settings > Database
+
+### 3️⃣ Configure Environment Variables
+
+Create a `.env` file in the project root:
+
+```bash
+# Copy the template
+cp .env.example .env
+
+# Edit .env with your Supabase credentials
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_DB_HOST=aws-0-ap-southeast-1.pooler.supabase.com
+SUPABASE_DB_PORT=6543
+SUPABASE_DB_NAME=postgres
+SUPABASE_DB_USERNAME=postgres.your-project-ref
+SUPABASE_DB_PASSWORD=your-database-password
+SPRING_PROFILES_ACTIVE=prod
 ```
 
-### 3️⃣ Build the Application
+### 4️⃣ Verify Java & Maven
+```bash
+java -version    # Should be Java 21 or higher
+mvn -version     # Should be Maven 3.9 or higher
+```
+
+### 5️⃣ Build the Application
 ```bash
 mvn clean install -DskipTests
 ```
-This will download all dependencies and build the project.
 
-### 4️⃣ Run the Application
+### 6️⃣ Run the Application
 ```bash
-mvn spring-boot:run
+JAVA_HOME=/opt/homebrew/opt/openjdk@21 mvn spring-boot:run
 ```
 
 You should see:
@@ -245,12 +268,12 @@ You should see:
 Started LibraryManagementApplication in X.XXX seconds
 ```
 
-### 5️⃣ Access the Application
+### 7️⃣ Access the Application
 Open your browser and go to: **http://localhost:8080**
 
 You'll be redirected to the login page automatically.
 
-### 6️⃣ Login with Default Credentials
+### 8️⃣ Login with Default Credentials
 
 **Librarian Account (Full Access):**
 - Username: `librarian`
@@ -260,7 +283,7 @@ You'll be redirected to the login page automatically.
 - Username: `member`
 - Password: `member123`
 
-### 7️⃣ Start Using!
+### 9️⃣ Start Using!
 - **Add Books**: Go to Books page and click "Add New Book"
 - **Register Members**: Go to Members page (librarian only)
 - **Borrow Books**: Go to Transactions page
@@ -389,65 +412,81 @@ The application will start on: **http://localhost:8080**
 
 ## ⚙️ Configuration Details
 
-### Database Configuration
+### Database Configuration - SUPABASE ONLY
 
-The application uses **H2 Database** in **file-based persistent mode**.
+The application now uses **Supabase PostgreSQL Database** exclusively. No local H2 database is used.
 
-**Configuration File**: [`application.properties`](src/main/resources/application.properties)
+**Configuration File**: [`application-prod.properties`](src/main/resources/application-prod.properties)
 
 ```properties
-# Server Port
-server.port=8080
+# Supabase PostgreSQL Database Configuration
+spring.datasource.url=jdbc:postgresql://${SUPABASE_DB_HOST}:${SUPABASE_DB_PORT}/${SUPABASE_DB_NAME}?sslmode=require
+spring.datasource.username=${SUPABASE_DB_USERNAME}
+spring.datasource.password=${SUPABASE_DB_PASSWORD}
+spring.datasource.driver-class-name=org.postgresql.Driver
 
-# H2 Database - File-based (Persistent Storage)
-spring.datasource.url=jdbc:h2:file:./data/librarydb
-spring.datasource.driverClassName=org.h2.Driver
-spring.datasource.username=sa
-spring.datasource.password=
-
-# JPA Settings
+# JPA/Hibernate Configuration
 spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+```
 
-# H2 Console (for development/debugging)
-spring.h2.console.enabled=true
-spring.h2.console.path=/h2-console
+### Environment Variables Required
+
+Create a `.env` file in the project root with your Supabase credentials:
+
+```properties
+# Supabase REST API
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_ANON_KEY=your-anon-key-here
+
+# Supabase PostgreSQL Database
+SUPABASE_DB_HOST=aws-0-ap-southeast-1.pooler.supabase.com
+SUPABASE_DB_PORT=6543
+SUPABASE_DB_NAME=postgres
+SUPABASE_DB_USERNAME=postgres.your-project-ref
+SUPABASE_DB_PASSWORD=your-database-password-here
+
+# Spring Configuration
+SPRING_PROFILES_ACTIVE=prod
+SERVER_PORT=8080
 ```
 
 ### What This Configuration Does:
 
-✅ **Persistent Storage**: All data (books, members, transactions, users) is saved to `./data/librarydb.mv.db`  
-✅ **Data Survives Restarts**: When you stop and restart the application, all your data is preserved  
-✅ **Automatic Schema Updates**: The database schema automatically updates when you modify entity classes (`ddl-auto=update`)  
-✅ **Default Users Created Once**: On first run, default librarian and member accounts are created automatically  
-✅ **SQL Logging**: All SQL queries are logged to console for debugging (can be disabled in production)
+✅ **Cloud Database**: All data stored in Supabase PostgreSQL  
+✅ **No Local Files**: No local database files or data folder required  
+✅ **Automatic Schema Updates**: Hibernate creates/updates tables on startup  
+✅ **Default Users Created**: On first run, default librarian and member accounts are created  
+✅ **SSL Secured**: Database connection uses SSL encryption  
+✅ **Connection Pooling**: HikariCP manages database connections efficiently
 
-### Database Files Location:
-```
-library_management/
-└── data/
-    ├── librarydb.mv.db       ← Main database file (contains all tables and data)
-    └── librarydb.trace.db    ← Trace/log file (for debugging)
-```
+### Getting Started with Supabase
 
-### Accessing H2 Console (Optional for Database Inspection):
+1. **Create a Supabase Project**:
+   - Go to [supabase.com](https://supabase.com)
+   - Create a new project
+   - Note your Project URL and API keys
 
-1. **Start the application** (`mvn spring-boot:run`)
-2. **Open browser**: http://localhost:8080/h2-console
-3. **Login with these settings**:
-   - **JDBC URL**: `jdbc:h2:file:./data/librarydb`
-   - **Username**: `sa`
-   - **Password**: *(leave empty)*
-4. **Click "Connect"**
+2. **Get Database Credentials**:
+   - Go to Project Settings > Database
+   - Note the Connection Pooling credentials
+   - Or use Direct connection settings
 
-You can now view and query all tables directly!
+3. **Set Environment Variables**:
+   - Copy `.env.example` to `.env`
+   - Fill in your Supabase credentials
+   - Spring Boot will automatically load from `.env` via `spring-dotenv`
 
-**Available Tables**:
-- `USERS` - System users (librarian, members)
-- `BOOK` - Book catalog
-- `MEMBER` - Library members
-- `TRANSACTION` - Borrow/return records
+4. **Run the Application**:
+   ```bash
+   JAVA_HOME=/opt/homebrew/opt/openjdk@21 mvn spring-boot:run
+   ```
+
+The application will:
+- Connect to your Supabase PostgreSQL database
+- Create necessary tables automatically
+- Initialize default users (librarian/member)
+- Be ready to use at http://localhost:8080
 
 ---
 
@@ -882,7 +921,14 @@ spring.jpa.hibernate.ddl-auto=update  # Updates schema without data loss
 
 ### Common Issues and Solutions
 
-#### 1. "JAVA_HOME is not set"
+#### 1. "Cannot connect to Supabase database"
+**Solution:**
+- Verify your `.env` file has correct credentials
+- Check that your Supabase project is active
+- Ensure your IP is not blocked by firewall rules
+- Test connection string in database client like DBeaver
+
+#### 2. "JAVA_HOME is not set"
 **Mac:**
 ```bash
 echo 'export JAVA_HOME="/opt/homebrew/opt/openjdk@21"' >> ~/.zshrc
@@ -893,7 +939,7 @@ source ~/.zshrc
 - Set System Environment Variable `JAVA_HOME` to your JDK path
 - Example: `C:\Program Files\Eclipse Adoptium\jdk-21.0.10`
 
-#### 2. "mvn: command not found"
+#### 3. "mvn: command not found"
 **Mac:**
 ```bash
 brew install maven
@@ -903,22 +949,18 @@ brew install maven
 - Download Maven from apache.org
 - Add `MAVEN_HOME\bin` to System PATH
 
-#### 3. Port 8080 already in use
-Change the port in `application.properties`:
+#### 4. Port 8080 already in use
+Change the port in `.env`:
 ```properties
-server.port=8081
+SERVER_PORT=8081
 ```
 
-#### 4. H2 Console not loading
-Ensure these properties are set:
-```properties
-spring.h2.console.enabled=true
-spring.h2.console.path=/h2-console
-```
-
-#### 5. Lombok not working in IDE
-- Install Lombok plugin for your IDE
-- Enable annotation processing in IDE settings
+#### 5. Tables not created on startup
+**Solution:**
+- Check that Hibernate `ddl-auto=update` is set in application-prod.properties
+- Verify database connection is working
+- Check logs for SQL errors
+- Manually create tables using Supabase SQL Editor if needed
 
 ## 🎨 Design Features
 

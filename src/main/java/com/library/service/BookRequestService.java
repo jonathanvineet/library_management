@@ -25,7 +25,7 @@ public class BookRequestService {
     private final TransactionService transactionService;
     private final UserRepository userRepository;
 
-    public BookRequest requestBook(UUID bookId, UUID userId) {
+    public BookRequest requestBook(Long bookId, UUID userId) {
         Book book = bookService.getBookById(bookId)
                 .orElseThrow(() -> new RuntimeException("Book not found"));
         User user = userRepository.findById(userId)
@@ -61,7 +61,7 @@ public class BookRequestService {
         return enrichRequest(bookRequestRepository.save(request));
     }
 
-    public BookRequest requestBookByMemberId(UUID bookId, Long memberId) {
+    public BookRequest requestBookByMemberId(Long bookId, Long memberId) {
         Member member = memberService.getMemberById(memberId)
                 .orElseThrow(() -> new RuntimeException("Member not found"));
         User user = userRepository.findByEmail(member.getEmail())
@@ -85,7 +85,7 @@ public class BookRequestService {
         return getRequestsByUser(user.getId());
     }
 
-    public BookRequest approveRequest(UUID requestId) {
+    public BookRequest approveRequest(Long requestId) {
         BookRequest request = bookRequestRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Request not found"));
 
@@ -110,7 +110,7 @@ public class BookRequestService {
         return enrichRequest(bookRequestRepository.save(request));
     }
 
-    public BookRequest rejectRequest(UUID requestId, String reason) {
+    public BookRequest rejectRequest(Long requestId, String reason) {
         BookRequest request = bookRequestRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Request not found"));
 

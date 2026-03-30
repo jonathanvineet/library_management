@@ -3,7 +3,6 @@ package com.library.controller;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,7 +49,7 @@ public class TransactionController {
     }
 
     @GetMapping("/book/{bookId}")
-    public ResponseEntity<List<Transaction>> getTransactionsByBook(@PathVariable UUID bookId) {
+    public ResponseEntity<List<Transaction>> getTransactionsByBook(@PathVariable Long bookId) {
         return ResponseEntity.ok(transactionService.getTransactionsByBook(bookId));
     }
 
@@ -81,7 +80,7 @@ public class TransactionController {
     @PostMapping("/borrow")
     public ResponseEntity<?> borrowBook(@RequestBody Map<String, Object> request) {
         try {
-            UUID bookId = UUID.fromString(request.get("bookId").toString());
+            Long bookId = Long.valueOf(request.get("bookId").toString());
             Long memberId = Long.valueOf(request.get("memberId").toString());
             Integer loanDays = request.containsKey("loanDays") 
                 ? Integer.valueOf(request.get("loanDays").toString()) 

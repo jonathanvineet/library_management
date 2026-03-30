@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/books")
@@ -26,7 +25,7 @@ public class BookController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Book> getBookById(@PathVariable UUID id) {
+    public ResponseEntity<Book> getBookById(@PathVariable Long id) {
         return bookService.getBookById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -70,7 +69,7 @@ public class BookController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateBook(@PathVariable UUID id, @Valid @RequestBody Book book) {
+    public ResponseEntity<?> updateBook(@PathVariable Long id, @Valid @RequestBody Book book) {
         try {
             Book updatedBook = bookService.updateBook(id, book);
             return ResponseEntity.ok(updatedBook);
@@ -80,7 +79,7 @@ public class BookController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteBook(@PathVariable UUID id) {
+    public ResponseEntity<Void> deleteBook(@PathVariable Long id) {
         try {
             bookService.deleteBook(id);
             return ResponseEntity.noContent().build();

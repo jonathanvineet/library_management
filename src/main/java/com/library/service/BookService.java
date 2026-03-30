@@ -8,7 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +20,7 @@ public class BookService {
         return bookRepository.findAll();
     }
 
-    public Optional<Book> getBookById(UUID id) {
+    public Optional<Book> getBookById(Long id) {
         return bookRepository.findById(id);
     }
 
@@ -60,7 +59,7 @@ public class BookService {
         return bookRepository.save(book);
     }
 
-    public Book updateBook(UUID id, Book bookDetails) {
+    public Book updateBook(Long id, Book bookDetails) {
         Book book = bookRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Book not found with id: " + id));
 
@@ -87,13 +86,13 @@ public class BookService {
         return bookRepository.save(book);
     }
 
-    public void deleteBook(UUID id) {
+    public void deleteBook(Long id) {
         Book book = bookRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Book not found with id: " + id));
         bookRepository.delete(book);
     }
 
-    public void incrementAvailableCopies(UUID bookId) {
+    public void incrementAvailableCopies(Long bookId) {
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new RuntimeException("Book not found with id: " + bookId));
         if (book.getAvailableCopies() < book.getTotalCopies()) {
@@ -102,7 +101,7 @@ public class BookService {
         }
     }
 
-    public void decrementAvailableCopies(UUID bookId) {
+    public void decrementAvailableCopies(Long bookId) {
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new RuntimeException("Book not found with id: " + bookId));
         if (book.getAvailableCopies() > 0) {

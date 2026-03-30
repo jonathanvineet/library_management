@@ -27,18 +27,18 @@ export default function Login() {
     try {
       setIsLoading(true);
       setError(null);
-      
-      const authToken = btoa(`${email}:${password}`);
-      localStorage.setItem("auth_token", authToken); // Temporarily set for API call
 
       const response = await api.post("/auth/login", { email, password });
-      
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Invalid email or password");
+      }
+      
       login(data);
       router.push("/dashboard");
     } catch (err: any) {
       setError(err.message || "Invalid email or password");
-      localStorage.removeItem("auth_token");
     } finally {
       setIsLoading(false);
     }

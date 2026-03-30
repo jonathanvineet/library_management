@@ -38,7 +38,8 @@ export default function Register() {
       const response = await api.post("/users/register", formData);
       
       if (!response.ok) {
-        throw new Error("Registration failed. Username or email may already exist.");
+        const payload = await response.json();
+        throw new Error(payload?.error || "Registration failed. Username or email may already exist.");
       }
       
       router.push("/login?registered=true");

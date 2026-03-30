@@ -22,7 +22,7 @@ public class BookRequestController {
     @PostMapping("/request")
     public ResponseEntity<?> requestBook(@RequestBody Map<String, Object> request) {
         try {
-            UUID bookId = UUID.fromString(request.get("bookId").toString());
+            Long bookId = Long.valueOf(request.get("bookId").toString());
 
             BookRequest created;
             if (request.containsKey("userId") && request.get("userId") != null) {
@@ -49,20 +49,22 @@ public class BookRequestController {
     @GetMapping("/member/{memberOrUserId}")
     public ResponseEntity<?> getMemberRequests(@PathVariable String memberOrUserId) {
         try {
-            if (memberOrUserId.contains("-")) {
+            // Try to parse as UUID for User ID
+            try {
                 UUID userId = UUID.fromString(memberOrUserId);
                 return ResponseEntity.ok(bookRequestService.getRequestsByUser(userId));
+            } catch (NumberFormatException e) {
+                // If it fails, try as member ID
+                Long memberId = Long.valueOf(memberOrUserId);
+                return ResponseEntity.ok(bookRequestService.getRequestsByMemberId(memberId));
             }
-
-            Long memberId = Long.valueOf(memberOrUserId);
-            return ResponseEntity.ok(bookRequestService.getRequestsByMemberId(memberId));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
     @PostMapping("/{requestId}/approve")
-    public ResponseEntity<?> approveRequest(@PathVariable UUID requestId) {
+    public ResponseEntity<?> approveRequest(@PathVariable Long requestId) {
         try {
             return ResponseEntity.ok(bookRequestService.approveRequest(requestId));
         } catch (RuntimeException e) {
@@ -71,7 +73,7 @@ public class BookRequestController {
     }
 
     @PostMapping("/{requestId}/reject")
-    public ResponseEntity<?> rejectRequest(@PathVariable UUID requestId, @RequestBody(required = false) Map<String, String> payload) {
+    public ResponseEntity<?> rejectRequest(@PathVariable Long requestId, @RequestBody(required = false) Map<String, String> payload) {
         try {
             String reason = payload == null ? null : payload.get("reason");
             return ResponseEntity.ok(bookRequestService.rejectRequest(requestId, reason));

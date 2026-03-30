@@ -53,11 +53,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                     .requestMatchers("/", "/login", "/*.html", "/index.html", "/admin-dashboard.html", "/student-dashboard.html", "/css/**", "/js/**", "/favicon.ico").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/register").permitAll()
 
                         // Users endpoints - Only Librarians can manage users (except registration)
-                        .requestMatchers("/api/users/**").hasRole("LIBRARIAN")
+                        .requestMatchers(HttpMethod.GET, "/api/users/**").hasRole("LIBRARIAN")
+                        .requestMatchers(HttpMethod.PUT, "/api/users/**").hasRole("LIBRARIAN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("LIBRARIAN")
 
                         // Books endpoints - Members can read, only Librarians can modify
                         .requestMatchers(HttpMethod.GET, "/api/books/**").hasAnyRole("LIBRARIAN", "MEMBER")
@@ -85,11 +88,6 @@ public class SecurityConfig {
                         // All other requests require authentication
                         .anyRequest().authenticated()
                 )
-                .httpBasic(httpBasic -> httpBasic.authenticationEntryPoint((request, response, authException) -> {
-                    response.setStatus(401);
-                    response.setContentType("application/json");
-                    response.getWriter().write("{\"error\":\"Unauthorized\"}");
-                }))
                 .authenticationProvider(authenticationProvider());
 
         return http.build();
@@ -101,7 +99,8 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(List.of("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
+        configuration.setAllowCredentials(false);  // Set to false when using "*" origin pattern
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

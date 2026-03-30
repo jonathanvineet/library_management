@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -28,33 +29,79 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    // Check local storage on mount
-    const token = localStorage.getItem("auth_token");
-    if (token) {
+    let mounted = true;
+
+    const loadSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!mounted) return;
+
+      if (session?.user) {
+        const user = session.user;
+        const { data: profile } = await supabase
+          .from("users")
+          .select("id, username, full_name, email, role")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        setIsAuthenticated(true);
+        setUserRole((profile?.role || (user.user_metadata?.role as string) || "member").toUpperCase());
+        setUsername(profile?.username || user.email?.split("@")[0] || null);
+        setFullName(profile?.full_name || (user.user_metadata?.fullName as string) || user.email || null);
+        setEmail(profile?.email || user.email || null);
+        setUserId(user.id);
+      }
+
+      setIsLoaded(true);
+    };
+
+    loadSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+
+      if (!session?.user) {
+        setIsAuthenticated(false);
+        setUserRole(null);
+        setUsername(null);
+        setFullName(null);
+        setEmail(null);
+        setUserId(null);
+        return;
+      }
+
+      const user = session.user;
       setIsAuthenticated(true);
-      setUserRole(localStorage.getItem("userRole"));
-      setUsername(localStorage.getItem("username"));
-      setFullName(localStorage.getItem("fullName"));
-      setEmail(localStorage.getItem("email"));
-      setUserId(localStorage.getItem("userId"));
-    }
-    setIsLoaded(true);
+      setUserRole(((user.user_metadata?.role as string) || "member").toUpperCase());
+      setUsername((user.user_metadata?.username as string) || user.email?.split("@")[0] || null);
+      setFullName((user.user_metadata?.fullName as string) || user.email || null);
+      setEmail(user.email || null);
+      setUserId(user.id);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = (userData: any) => {
     setIsAuthenticated(true);
-    setUserRole(userData.role);
+    setUserRole(userData.role?.toUpperCase?.() || "MEMBER");
     setUsername(userData.username);
     setFullName(userData.fullName || userData.username);
     setEmail(userData.email);
-    setUserId(userData.id?.toString());
+    setUserId((userData.id || userData.userId)?.toString());
     
-    // Auth token is already saved by login page, just save user info
-    if (userData.role) localStorage.setItem("userRole", userData.role);
+    if (userData.role) localStorage.setItem("userRole", userData.role.toUpperCase());
     if (userData.username) localStorage.setItem("username", userData.username);
     if (userData.fullName) localStorage.setItem("fullName", userData.fullName);
     if (userData.email) localStorage.setItem("email", userData.email);
-    if (userData.id) localStorage.setItem("userId", userData.id.toString());
+    if (userData.id || userData.userId) localStorage.setItem("userId", (userData.id || userData.userId).toString());
   };
 
   const logout = () => {
@@ -65,12 +112,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setEmail(null);
     setUserId(null);
     
-    localStorage.removeItem("auth_token");
     localStorage.removeItem("userRole");
     localStorage.removeItem("username");
     localStorage.removeItem("fullName");
     localStorage.removeItem("email");
     localStorage.removeItem("userId");
+
+    supabase.auth.signOut();
 
     router.push("/login");
   };

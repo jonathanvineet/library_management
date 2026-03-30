@@ -3,7 +3,6 @@ package com.library.service;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,7 +35,7 @@ public class TransactionService {
         return transactionRepository.findByMemberId(memberId);
     }
 
-    public List<Transaction> getTransactionsByBook(UUID bookId) {
+    public List<Transaction> getTransactionsByBook(Long bookId) {
         return transactionRepository.findByBookId(bookId);
     }
 
@@ -64,7 +63,7 @@ public class TransactionService {
         return transactionRepository.findByStatus(Transaction.TransactionStatus.BORROWED);
     }
 
-    public Transaction borrowBook(UUID bookId, Long memberId, Integer loanDays) {
+    public Transaction borrowBook(Long bookId, Long memberId, Integer loanDays) {
         // Validate book
         Book book = bookService.getBookById(bookId)
                 .orElseThrow(() -> new RuntimeException("Book not found with id: " + bookId));

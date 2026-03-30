@@ -45,7 +45,8 @@ export default function Dashboard() {
             userTxs = txs.filter((t: any) => t.member?.id?.toString() === userId.toString());
           }
           
-          txsCount = userTxs.length;
+          const loanTxs = userTxs.filter((t: any) => ["BORROWED", "RETURNED", "OVERDUE", "LOST"].includes(t.status));
+          txsCount = loanTxs.length;
           overdueCount = userTxs.filter((t: any) => t.status === "OVERDUE").length;
           setRecentTransactions(userTxs.slice(0, 5));
         }

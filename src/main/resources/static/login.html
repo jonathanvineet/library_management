@@ -1,118 +1,137 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign In — LibraryHub</title>
-    <meta name="description" content="Sign in to your LibraryHub account to manage books, members, and transactions.">
+    <title>Login - Library Management System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <div class="auth-wrapper">
-        <!-- Visual Side -->
-        <div class="auth-visual">
-            <img src="https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=1200&h=1600&fit=crop" alt="Library">
-            <div class="auth-overlay-text">
-                <h2>Every book is a<br>new adventure</h2>
-                <p>Manage your entire library with a modern, powerful system built for efficiency.</p>
+    <div class="auth-container">
+        <div class="auth-card">
+            <!-- Theme Toggle -->
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+                    <span id="themeIcon">🌙</span>
+                </button>
             </div>
-        </div>
-
-        <!-- Form Side -->
-        <div class="auth-form-side">
-            <div class="brand">
-                <div class="brand-icon">📖</div>
-                <div class="brand-text">LibraryHub</div>
+            
+            <div class="auth-header">
+                <div class="auth-brand">📚</div>
+                <h1>Welcome Back</h1>
+                <p>Sign in to your Library Management account</p>
             </div>
-
-            <h1>Welcome back</h1>
-            <p class="auth-subtitle">Sign in to your account to continue</p>
-
-            <div id="alert" class="auth-alert"></div>
-
+            
+            <div id="alert" class="alert" style="display: none;"></div>
+            
             <form id="loginForm">
                 <div class="form-group">
-                    <label for="username">Username or Email</label>
-                    <input type="text" id="username" class="form-control" placeholder="Enter your username" required autocomplete="username">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" placeholder="Enter your username" required>
                 </div>
-
+                
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" class="form-control" placeholder="Enter your password" required autocomplete="current-password">
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
                 </div>
-
-                <button type="submit" class="btn btn-primary btn-lg w-full" id="loginBtn" style="justify-content:center;">
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
                     Sign In
                 </button>
             </form>
-
-            <div class="auth-link">
-                Don't have an account? <a href="register.html">Create one</a>
+            
+            <div style="text-align: center; margin-top: 1.5rem;">
+                <p style="color: var(--text-secondary); font-size: 0.938rem;">
+                    Don't have an account? 
+                    <a href="register.html" style="color: var(--primary-600); font-weight: 600; text-decoration: underline;">
+                        Register here
+                    </a>
+                </p>
             </div>
+            
         </div>
     </div>
 
     <script>
-        // Redirect if on Live Server port
-        if (window.location.port === '5500') {
-            window.location.replace('http://localhost:8080/login.html');
+        // Theme Toggle Functionality
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
         }
 
-        // If already logged in, redirect
-        if (sessionStorage.getItem('authCredentials')) {
-            const role = sessionStorage.getItem('userRole');
-            window.location.href = '/index.html';
+        function updateThemeIcon(theme) {
+            const icon = document.getElementById('themeIcon');
+            icon.textContent = theme === 'light' ? '🌙' : '☀️';
         }
 
-        const API = window.location.port === '5500' ? 'http://localhost:8080/api' : '/api';
+        // Load saved theme
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeIcon(savedTheme);
+        });
 
+        // Login Form Handler
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const alertBox = document.getElementById('alert');
-            const btn = document.getElementById('loginBtn');
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value;
 
-            btn.textContent = 'Signing in...';
-            btn.disabled = true;
-            alertBox.style.display = 'none';
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const alertBox = document.getElementById('alert');
+
+            // Determine API base URL
+            const apiBaseUrl = window.location.port === '5500'
+                ? 'http://localhost:8080/api'
+                : '/api';
 
             try {
-                const response = await fetch(`${API}/auth/login`, {
+                // No need to store credentials in basic auth format - we use session-based authentication
+                const response = await fetch(`${apiBaseUrl}/auth/login`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
                     body: JSON.stringify({ username, password })
                 });
-
+                
                 const data = await response.json();
-
+                
                 if (response.ok) {
-                    // Store credentials
-                    sessionStorage.setItem('authCredentials', btoa(`${username}:${password}`));
+                    // Store user info but not credentials in basic auth format
+                    // Normalize role (strip Spring Security prefix if present)
+                    const rawRole = String(data.role || '').toUpperCase();
+                    const normalizedRole = rawRole.startsWith('ROLE_') ? rawRole.substring(5) : rawRole;
+                    sessionStorage.setItem('userRole', normalizedRole);
+                    sessionStorage.setItem('userId', data.userId || '');
                     sessionStorage.setItem('username', data.username);
-                    sessionStorage.setItem('fullName', data.fullName || data.username);
-                    sessionStorage.setItem('userRole', data.role);
-                    sessionStorage.setItem('userId', data.userId);
+                    sessionStorage.setItem('fullName', data.fullName);
                     sessionStorage.setItem('email', data.email || '');
-
-                    alertBox.className = 'auth-alert alert-success';
-                    alertBox.textContent = '✓ Login successful! Redirecting...';
+                    
+                    alertBox.className = 'alert alert-success';
+                    alertBox.textContent = '✅ Login successful! Redirecting...';
                     alertBox.style.display = 'block';
-
-                    setTimeout(() => { window.location.href = '/index.html'; }, 800);
+                    
+                    // Redirect based on normalized role
+                    const dashboardUrl = normalizedRole === 'LIBRARIAN' ? '/admin-dashboard.html' : '/student-dashboard.html';
+                    setTimeout(() => {
+                        window.location.href = dashboardUrl;
+                    }, 1001);
                 } else {
-                    alertBox.className = 'auth-alert alert-error';
-                    alertBox.textContent = data.error || 'Invalid credentials';
+                    alertBox.className = 'alert alert-error';
+                    alertBox.textContent = '❌ ' + (data.error || 'Login failed. Please check your credentials.');
                     alertBox.style.display = 'block';
-                    btn.textContent = 'Sign In';
-                    btn.disabled = false;
                 }
-            } catch (err) {
-                alertBox.className = 'auth-alert alert-error';
-                alertBox.textContent = 'Cannot reach server. Make sure Spring Boot is running on port 8080.';
+            } catch (error) {
+                alertBox.className = 'alert alert-error';
+                alertBox.textContent = '❌ An error occurred. Please try again.';
                 alertBox.style.display = 'block';
-                btn.textContent = 'Sign In';
-                btn.disabled = false;
             }
         });
     </script>
