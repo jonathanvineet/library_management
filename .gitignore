@@ -1,52 +1,42 @@
-HELP.md
-target/
-!.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+# Root .gitignore for Library Management System
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
+# OS Files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
 
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### VS Code ###
+# IDE
 .vscode/
+.idea/
+*.iml
 
-### Environment Variables ###
+# Logs
+*.log
+logs/
+
+# Environment files (keep .env.example)
 .env
 .env.local
-.env.production
+.env.development.local
+.env.test.local
+.env.production.local
 
-### MacOS ###
-.DS_Store
-
-### Logs ###
-*.log
-
-### H2 Database Files ###
-/data/
-*.db
+# Database files (local H2 databases)
+data/
 *.mv.db
 *.trace.db
 
-/node_modules
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Documentation files (except root README.md)
+*.md
+!README.md
+
+# SQL scripts (optional - uncomment if you don't want to track them)
+# *.sql
