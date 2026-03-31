@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: library-management-backend
+    runtime: java
+    region: oregon
+    plan: free
+    buildCommand: ./mvnw clean package -DskipTests
+    startCommand: java -Dspring.profiles.active=prod -jar target/library-api-1.0.0.jar
+    envVars:
+      - key: DATABASE_URL
+        value: jdbc:postgresql://db.hnpgjwbhndackowriqau.supabase.co:5432/postgres?sslmode=require&user=postgres&password=tkt@vav@vj@u1
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: FRONTEND_URL
+        sync: false
+      - key: ADMIN_EMAIL
+        value: admin@gmail.com
+      - key: ADMIN_PASSWORD
+        value: admin123
+      - key: ADMIN_NAME
+        value: Admin
+    healthCheckPath: /api/books
