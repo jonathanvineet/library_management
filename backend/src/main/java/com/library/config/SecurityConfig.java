@@ -39,12 +39,19 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         List<String> origins = Arrays.stream(allowedOrigins.split(","))
             .map(String::trim)
+            .map(origin -> origin.endsWith("/") ? origin.substring(0, origin.length() - 1) : origin)
             .filter(origin -> !origin.isEmpty())
             .collect(Collectors.toList());
 
         configuration.setAllowedOrigins(origins);
+        configuration.setAllowedOriginPatterns(Arrays.asList(
+            "https://*.vercel.app",
+            "http://localhost:*",
+            "https://localhost:*"
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
