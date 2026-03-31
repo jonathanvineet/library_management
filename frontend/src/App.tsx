@@ -13,9 +13,6 @@ import MembersPage from "./pages/MembersPage";
 import TransactionsPage from "./pages/TransactionsPage";
 import RequestsPage from "./pages/RequestsPage";
 import NotFound from "./pages/NotFound";
-import { lazy, Suspense } from "react";
-
-const SupabaseDemo = lazy(() => import("./pages/SupabaseDemo"));
 
 const queryClient = new QueryClient();
 
@@ -34,7 +31,6 @@ const App = () => (
           <Route path="/members" element={<RoleRoute allowedRoles={['LIBRARIAN']}><MembersPage /></RoleRoute>} />
           <Route path="/transactions" element={<ProtectedRoute><TransactionsPage /></ProtectedRoute>} />
           <Route path="/requests" element={<ProtectedRoute><RequestsPage /></ProtectedRoute>} />
-          <Route path="/supabase-demo" element={<Suspense fallback={<div>Loading...</div>}><SupabaseDemo /></Suspense>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
