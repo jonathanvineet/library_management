@@ -1,3 +1,8 @@
 .vercel
 /node_modules
 .env*.local
+*.js
+*.d.ts
+*.js.map
+api/*.js
+src/*.js
