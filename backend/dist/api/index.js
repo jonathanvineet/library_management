@@ -43,5 +43,8 @@ app.use('/transactions', transactions_1.default);
 app.get('/health', (req, res) => {
     res.json({ status: 'ok' });
 });
-exports.default = app;
+// Export as Vercel serverless handler
+exports.default = (req, res) => {
+    app(req, res);
+};
 //# sourceMappingURL=index.js.map

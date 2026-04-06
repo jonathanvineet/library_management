@@ -1,3 +1,4 @@
-declare const app: import("express-serve-static-core").Express;
-export default app;
+import { VercelRequest, VercelResponse } from '@vercel/node';
+declare const _default: (req: VercelRequest, res: VercelResponse) => void;
+export default _default;
 //# sourceMappingURL=index.d.ts.map

@@ -1,3 +1,4 @@
+import { VercelRequest, VercelResponse } from '@vercel/node';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -48,4 +49,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-export default app;
+// Export as Vercel serverless handler
+export default (req: VercelRequest, res: VercelResponse) => {
+  app(req, res);
+};

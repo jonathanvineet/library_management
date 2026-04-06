@@ -21,6 +21,7 @@
     "@types/express": "^4.17.21",
     "@types/node": "^20.11.5",
     "@types/pg": "^8.20.0",
+    "@vercel/node": "^5.7.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.2"
   }
