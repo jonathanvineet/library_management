@@ -1,18 +1,20 @@
 {
-  "buildCommand": "cd backend && ./mvnw clean package -DskipTests",
-  "outputDirectory": "backend/target",
-  "framework": "java",
+  "buildCommand": "npm run build",
+  "outputDirectory": "frontend/dist",
+  "framework": "vite",
   "env": {
     "DATABASE_URL": "@database_url",
-    "SPRING_PROFILES_ACTIVE": "prod",
-    "FRONTEND_URL": "https://library-management-eight-livid.vercel.app",
-    "ADMIN_EMAIL": "@admin_email",
-    "ADMIN_PASSWORD": "@admin_password",
-    "ADMIN_NAME": "@admin_name"
+    "FRONTEND_URL": "https://library-management-eight-livid-eosin.vercel.app"
   },
   "functions": {
-    "backend/src/main/java/**/*.java": {
-      "runtime": "java21"
+    "api/**/*.ts": {
+      "runtime": "nodejs20.x"
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "http://localhost:3000/api/:path*"
+    }
+  ]
 }

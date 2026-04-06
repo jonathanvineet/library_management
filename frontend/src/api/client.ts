@@ -4,6 +4,7 @@ import type { ApiError } from '@/types';
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 });
 
 apiClient.interceptors.request.use((config) => {

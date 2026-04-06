@@ -1,0 +1,20 @@
+{
+  "name": "library-management",
+  "version": "1.0.0",
+  "description": "Unified Library Management System",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm --prefix server run dev\" \"npm --prefix frontend run dev\"",
+    "build": "npm --prefix server run build && npm --prefix frontend run build",
+    "start": "node server/dist/index.js",
+    "install-all": "npm install && npm --prefix server install && npm --prefix frontend install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "workspaces": [
+    "frontend",
+    "server"
+  ]
+}
