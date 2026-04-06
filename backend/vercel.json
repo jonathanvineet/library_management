@@ -14,5 +14,9 @@
       "src": "/(.*)",
       "dest": "/dist/index.js"
     }
-  ]
+  ],
+  "env": {
+    "DATABASE_URL": "@postgresql_database_url",
+    "FRONTEND_URL": "https://library-management-14.vercel.app"
+  }
 }
