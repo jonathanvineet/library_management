@@ -1,0 +1,18 @@
+{
+  "buildCommand": "cd backend && ./mvnw clean package -DskipTests",
+  "outputDirectory": "backend/target",
+  "framework": "java",
+  "env": {
+    "DATABASE_URL": "@database_url",
+    "SPRING_PROFILES_ACTIVE": "prod",
+    "FRONTEND_URL": "https://library-management-eight-livid.vercel.app",
+    "ADMIN_EMAIL": "@admin_email",
+    "ADMIN_PASSWORD": "@admin_password",
+    "ADMIN_NAME": "@admin_name"
+  },
+  "functions": {
+    "backend/src/main/java/**/*.java": {
+      "runtime": "java21"
+    }
+  }
+}

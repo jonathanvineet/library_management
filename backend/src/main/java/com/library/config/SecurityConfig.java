@@ -46,6 +46,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(origins);
         configuration.setAllowedOriginPatterns(Arrays.asList(
             "https://*.vercel.app",
+            "https://library-management-eight-livid.vercel.app",
             "http://localhost:*",
             "https://localhost:*"
         ));
