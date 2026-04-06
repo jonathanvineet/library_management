@@ -1,9 +1,0 @@
-{
-  "buildCommand": "npm --prefix server run build && npm --prefix frontend run build",
-  "outputDirectory": "frontend/dist",
-  "framework": "vite",
-  "env": {
-    "DATABASE_URL": "@database_url",
-    "FRONTEND_URL": "https://library-management-eight-livid.vercel.app"
-  }
-}
