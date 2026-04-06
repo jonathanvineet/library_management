@@ -12,32 +12,21 @@ dotenv.config();
 
 const app = express();
 
-// CORS configuration
+// CORS configuration - allow all origins for now
 const corsOptions = {
-  origin: 'https://library-management-14.vercel.app',
-  credentials: true,
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: false
 };
 
-// Apply CORS to all routes
+// Apply CORS middleware
 app.use(cors(corsOptions));
-
-// Handle preflight requests explicitly
 app.options('*', cors(corsOptions));
-
-// Add custom CORS headers as fallback
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'https://library-management-14.vercel.app');
-  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  next();
-});
 
 app.use(express.json());
 
-// Routes
+// Routes - note: Express will receive request path without /api prefix
 app.use('/auth', authRoutes);
 app.use('/books', booksRoutes);
 app.use('/members', membersRoutes);
@@ -49,7 +38,19 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// Root
+app.get('/', (req, res) => {
+  res.json({ message: 'Library Management API' });
+});
+
+// Error handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error(err);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
 // Export as Vercel serverless handler
 export default (req: VercelRequest, res: VercelResponse) => {
   app(req, res);
 };
+
