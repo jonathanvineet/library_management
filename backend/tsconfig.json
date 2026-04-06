@@ -13,6 +13,6 @@
     "declaration": false,
     "sourceMap": false
   },
-  "include": ["api", "src"],
+  "include": ["api", "lib"],
   "exclude": ["node_modules"]
 }
