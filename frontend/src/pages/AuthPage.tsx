@@ -1,5 +1,6 @@
 import { useAuthForm } from '../hooks/useAuthForm';
 import { useAuth } from '../hooks/useAuth';
+import React from 'react';
 
 export function AuthPage() {
   const { user, logout } = useAuth();
