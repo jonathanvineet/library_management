@@ -1,12 +1,10 @@
 {
   "version": 2,
+  "buildCommand": "npm run build",
   "builds": [
     {
       "src": "package.json",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["dist/**"]
-      }
+      "use": "@vercel/node@latest"
     }
   ],
   "routes": [
