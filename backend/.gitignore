@@ -24,3 +24,4 @@ application-local.properties
 *.class
 *.jar
 *.war
+.vercel
