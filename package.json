@@ -1,41 +1,19 @@
 {
-  "name": "library-management",
+  "name": "library-management-system",
   "version": "1.0.0",
-  "description": "Library Management System - Next.js Full Stack",
+  "description": "Three-tier library management system",
+  "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
-  "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "next": "^14.2.3",
-    "axios": "^1.6.8",
-    "bcrypt": "^5.1.1",
-    "pg": "^8.11.3",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "date-fns": "^3.6.0",
-    "@radix-ui/react-dialog": "^1.1.14",
-    "@radix-ui/react-label": "^2.1.7",
-    "@radix-ui/react-select": "^2.2.5",
-    "@radix-ui/react-tabs": "^1.1.12",
-    "@tanstack/react-table": "^8.17.3",
-    "lucide-react": "^0.308.0"
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "npm run build:backend && npm run build:frontend",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm start"
   },
   "devDependencies": {
-    "typescript": "^5.3.3",
-    "@types/react": "^18.2.37",
-    "@types/react-dom": "^18.2.15",
-    "@types/node": "^20.10.6",
-    "@types/bcrypt": "^5.0.2",
-    "tailwindcss": "^3.4.1",
-    "postcss": "^8.4.32",
-    "autoprefixer": "^10.4.16",
-    "eslint": "^8.56.0",
-    "eslint-config-next": "^14.2.3"
+    "concurrently": "^8.2.2"
   }
 }
-
