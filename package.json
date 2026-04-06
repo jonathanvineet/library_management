@@ -10,6 +10,10 @@
     "start": "node server/dist/index.js",
     "install-all": "npm install && npm --prefix server install && npm --prefix frontend install"
   },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "pg": "^8.11.3"
+  },
   "devDependencies": {
     "concurrently": "^8.2.2"
   },
