@@ -14,42 +14,25 @@ const transactions_1 = __importDefault(require("./routes/transactions"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 5000;
-//test
-// Middleware
-const allowedOrigins = [
-    'https://library-management-14.vercel.app',
-    'http://localhost:5173',
-    'http://localhost:3000'
-];
-app.use((0, cors_1.default)({
-    origin: function (origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        }
-        else {
-            callback(null, true); // Allow all for now, let browser handle
-        }
-    },
+// CORS configuration
+const corsOptions = {
+    origin: 'https://library-management-14.vercel.app',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    optionsSuccessStatus: 200
-}));
-// Handle preflight requests
-app.options('*', (0, cors_1.default)({
-    origin: function (origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        }
-        else {
-            callback(null, true);
-        }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    optionsSuccessStatus: 200
-}));
+    allowedHeaders: ['Content-Type', 'Authorization']
+};
+// Apply CORS to all routes
+app.use((0, cors_1.default)(corsOptions));
+// Handle preflight requests explicitly
+app.options('*', (0, cors_1.default)(corsOptions));
+// Add custom CORS headers as fallback
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', 'https://library-management-14.vercel.app');
+    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    next();
+});
 app.use(express_1.default.json());
 // Routes
 app.use('/api/auth', auth_1.default);

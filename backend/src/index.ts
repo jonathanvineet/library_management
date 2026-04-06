@@ -11,42 +11,29 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-//test
-// Middleware
-const allowedOrigins = [
-  'https://library-management-14.vercel.app',
-  'http://localhost:5173',
-  'http://localhost:3000'
-];
 
-app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(null, true); // Allow all for now, let browser handle
-    }
-  },
+// CORS configuration
+const corsOptions = {
+  origin: 'https://library-management-14.vercel.app',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  optionsSuccessStatus: 200
-}));
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
 
-// Handle preflight requests
-app.options('*', cors({
-  origin: function(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(null, true);
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  optionsSuccessStatus: 200
-}));
+// Apply CORS to all routes
+app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly
+app.options('*', cors(corsOptions));
+
+// Add custom CORS headers as fallback
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'https://library-management-14.vercel.app');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  next();
+});
 
 app.use(express.json());
 
