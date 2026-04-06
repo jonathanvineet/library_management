@@ -43,3 +43,5 @@ tmp/
 /.github
 /node_modules
 /next
+.vercel
+.env*.local
