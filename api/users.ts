@@ -32,7 +32,10 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    if (req.url.includes('/login') && req.method === 'POST') {
+    const url = req.url || '';
+    
+    // Handle login
+    if (url.includes('/login') && req.method === 'POST') {
       const { email, password } = req.body;
 
       if (!email || !password) {
@@ -61,7 +64,9 @@ export default async function handler(req: any, res: any) {
         email: user.email,
         role: user.role,
       });
-    } else if (req.url.includes('/register') && req.method === 'POST') {
+    } 
+    // Handle register
+    else if (url.includes('/register') && req.method === 'POST') {
       const { email, password, name } = req.body;
 
       if (!email || !password || !name) {
@@ -81,7 +86,8 @@ export default async function handler(req: any, res: any) {
         email: user.email,
         role: user.role,
       });
-    } else {
+    } 
+    else {
       return res.status(405).json({ error: 'Method not allowed' });
     }
   } catch (error: any) {
