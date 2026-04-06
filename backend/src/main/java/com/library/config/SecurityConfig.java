@@ -37,23 +37,30 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
+        
+        // Add specific allowed origin from environment
         List<String> origins = Arrays.stream(allowedOrigins.split(","))
             .map(String::trim)
             .map(origin -> origin.endsWith("/") ? origin.substring(0, origin.length() - 1) : origin)
             .filter(origin -> !origin.isEmpty())
             .collect(Collectors.toList());
+        
+        if (!origins.isEmpty()) {
+            configuration.setAllowedOrigins(origins);
+        }
 
-        configuration.setAllowedOrigins(origins);
+        // Allow all vercel.app subdomains
         configuration.setAllowedOriginPatterns(Arrays.asList(
             "https://*.vercel.app",
-            "https://library-management-eight-livid.vercel.app",
             "http://localhost:*",
             "https://localhost:*"
         ));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        
+        configuration.setAllowedMethods(Arrays.asList("*"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
