@@ -1,9 +1,12 @@
 import { VercelResponse } from '@vercel/node';
 
+const ALLOWED_ORIGIN = 'https://library-management-14.vercel.app';
+
 export function setCORSHeaders(res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   return res;
 }
 
